@@ -1,0 +1,30 @@
+version: "3"
+
+services:
+  e2l_as_broker:
+    image: e2l-as-broker:v1.0.0
+    ports:
+      - "10884:1883"
+    volumes:
+      - ./e2l-as-broker/config/mosquitto.conf:/mosquitto/config/mosquitto.conf
+      - ./e2l-as-broker/data/:/mosquitto/data/
+      - ./e2l-as-broker/log/:/mosquitto/log/
+    networks:
+      - e2l_network
+
+  e2l_sink:
+    image: e2l-sink:v1.0.0
+    depends_on:
+      - e2l_as_broker
+    volumes:
+      - ./e2l-sink/device_files/:/home/e2l/e2l-sink/device_files/
+    env_file:
+      - ".env.sink"
+    ports:
+      - "50051:50051"
+    networks:
+      - e2l_network
+
+networks:
+  e2l_network:
+    external: true

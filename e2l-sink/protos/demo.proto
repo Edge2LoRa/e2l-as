@@ -1,0 +1,191 @@
+// Copyright 2019 gRPC authors.
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//     http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
+// Syntax version declaration. Must be placed on the first line of non-commentary.
+
+syntax = "proto3";
+// The document of proto3: https://developers.google.com/protocol-buffers/docs/proto3
+
+// Package name definition, which can be omitted in Python.
+package demo;
+
+/*
+`message` is used to define the structure of the data to be transmitted, after the equal sign
+is the field number. Each field in the message definition has a unique number.
+The overall format is similar to defining a class in Python or a structure in Golang.
+*/
+/*
+python -m grpc_tools.protoc -I../../protos --python_out=. --pyi_out=. --grpc_python_out=. ../../protos/demo.proto
+*/
+
+message Request {
+    int64 client_id = 1;
+    string request_data = 2;
+}
+
+message Response {
+    int64 server_id = 1;
+    string response_data = 2;
+}
+
+
+message SendStatistics {
+    int64 client_id = 1;
+    string message_data = 2;
+    int64 gw_1_received_frame_num = 3;
+    int64 gw_1_transmitted_frame_num = 4;
+    int64 gw_2_received_frame_num = 5;
+    int64 gw_2_transmitted_frame_num = 6;
+    int64 ns_received_frame_frame_num = 7;
+    int64 ns_transmitted_frame_frame_num = 8;
+    int64 module_received_frame_frame_num = 9;
+    int64 aggregation_function_result = 10;
+}
+
+message ReplyStatistics {
+    int64 server_id = 1;
+    string response_data = 2;
+    int64 ed_1_gw_selection = 3;
+    int64 ed_2_gw_selection = 4;
+    int64 ed_3_gw_selection = 5;
+    int64 start_key_agreement_process = 6;
+    string process_function = 7;
+    int64 process_window = 8;
+    int64 change_processing_configuraiton = 9;
+}
+
+/*
+key_agreement_message_node_id = 1 --> ED
+key_agreement_message_node_id = 2 --> GW
+key_agreement_message_node_id = 3 --> DM
+*/
+message SendLogMessage {
+    int64 client_id = 1;
+    string message_data = 2;
+    int64 key_agreement_log_message_node_id = 3;
+    string key_agreement_message_log = 4;
+    int64 key_agreement_process_time = 5;
+}
+
+message ReplyLogMessage {
+    int64 server_id = 1;
+    string response_data = 2;
+}
+
+message SendJoinUpdateMessage {
+    int64 client_id = 1;
+    string message_data = 2;
+    int64 ed_id = 3;
+    int64 gw_id = 4;
+}
+
+message ReplyJoinUpdateMessage {
+    int64 server_id = 1;
+    string response_data = 2;
+}
+
+message SendLogED {
+    int64 client_id = 1;
+    string message_data = 2;
+    string ed_key_agreement_message_log = 3;
+    int64 key_agreement_process_time = 4;
+}
+
+message ReplyLogED {
+    int64 server_id = 1;
+    string response_data = 2;
+}
+
+message SendLogGW {
+    int64 client_id = 1;
+    string message_data = 2;
+    string gw_1_agreement_message_log = 3;
+    int64 key_agreement_process_time = 4;
+}
+
+message ReplyLogGW {
+    int64 server_id = 1;
+    string response_data = 2;
+}
+
+message SendLogDM {
+    int64 client_id = 1;
+    string message_data = 2;
+    string module_key_agreement_message_log = 3;
+    int64 key_agreement_process_time = 4;
+}
+
+message ReplyLogDM {
+    int64 server_id = 1;
+    string response_data = 2;
+}
+
+// `service` 是用来给gRPC服务定义方法的, 格式固定, 类似于Golang中定义一个接口
+// `service` is used to define methods for gRPC services in a fixed format, similar to defining
+//an interface in Golang
+service GRPCDemo {
+    // unary-unary(In a single call, the client can only send request once, and the server can
+    // only respond once.)
+    rpc SimpleMethod (Request) returns (Response);
+
+    // stream-unary (In a single call, the client can transfer data to the server several times,
+    // but the server can only return a response once.)
+    rpc ClientStreamingMethod (stream Request) returns (Response);
+
+    // unary-stream (In a single call, the client can only transmit data to the server at one time,
+    // but the server can return the response many times.)
+    rpc ServerStreamingMethod (Request) returns (stream Response);
+
+    // stream-stream (In a single call, both client and server can send and receive data
+    // to each other multiple times.)
+    rpc BidirectionalStreamingMethod (stream Request) returns (stream Response);
+
+    // unary-unary(In a single call, the client can only send request once, and the server can
+    // only respond once.)
+    rpc SimpleMethodsStatistics (SendStatistics) returns (ReplyStatistics);
+
+    // stream-unary (In a single call, the client can transfer data to the server several times,
+    // but the server can only return a response once.)
+    rpc ClientStreamingMethodStatistics (stream SendStatistics) returns (ReplyStatistics);
+
+    // unary-stream (In a single call, the client can only transmit data to the server at one time,
+    // but the server can return the response many times.)
+    rpc ServerStreamingMethodStatistics (SendStatistics) returns (stream ReplyStatistics);
+
+    // stream-stream (In a single call, both client and server can send and receive data
+    // to each other multiple times.)
+    rpc BidirectionalStreamingMethodStatistics (stream SendStatistics) returns (stream ReplyStatistics);
+
+    // unary-unary(In a single call, the client can only send request once, and the server can
+    // only respond once.)
+    rpc SimpleMethodsJoinUpdateMessage (SendJoinUpdateMessage) returns (ReplyJoinUpdateMessage);
+
+    // unary-unary(In a single call, the client can only send request once, and the server can
+    // only respond once.)
+    rpc SimpleMethodsLogMessage (SendLogMessage) returns (ReplyLogMessage);
+
+    // unary-unary(In a single call, the client can only send request once, and the server can
+    // only respond once.)
+    rpc SimpleMethodsLogED (SendLogED) returns (ReplyLogED);
+
+    // unary-unary(In a single call, the client can only send request once, and the server can
+    // only respond once.)
+    rpc SimpleMethodsLogGW (SendLogGW) returns (ReplyLogGW);
+
+    // unary-unary(In a single call, the client can only send request once, and the server can
+    // only respond once.)
+    rpc SimpleMethodsLogDM (SendLogDM) returns (ReplyLogDM);
+
+
+}

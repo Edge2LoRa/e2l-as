@@ -1,0 +1,68 @@
+[
+  {
+    "ids": {
+      "device_id": "e2ed1",
+      "dev_eui": "1102030405060701",
+      "join_eui": "1102030405060701"
+    },
+    "name": "edge2lora1",
+    "description": "edge2lora  1",
+    "lorawan_version": "MAC_V1_0_2",
+    "lorawan_phy_version": "PHY_V1_0_2_REV_B",
+    "frequency_plan_id": "EU_863_870_TTN",
+    "supports_join": false,
+    "mac_settings": { "resets_f_cnt": true },
+    "root_keys": { "app_key": { "key": "01020304050607080102030405060708" } },
+    "session": {
+      "dev_addr": "0036D011",
+      "keys": {
+        "f_nwk_s_int_key": { "key": "3FCAD3200F0FA7AA500A67AE5A72B1B0" },
+        "app_s_key": { "key": "18709C1192FEAA38F477BF6B0A6CB7E5" }
+      }
+    }
+  },
+  {
+    "ids": {
+      "device_id": "e2ed2",
+      "dev_eui": "1102030405060702",
+      "join_eui": "1102030405060702"
+    },
+    "name": "edge2lora2",
+    "description": "edge2lora  2",
+    "lorawan_version": "MAC_V1_0_2",
+    "lorawan_phy_version": "PHY_V1_0_2_REV_B",
+    "frequency_plan_id": "EU_863_870_TTN",
+    "supports_join": false,
+    "mac_settings": { "resets_f_cnt": true },
+    "root_keys": { "app_key": { "key": "01020304050607080102030405060708" } },
+    "session": {
+      "dev_addr": "0036D012",
+      "keys": {
+        "f_nwk_s_int_key": { "key": "3FCAD3200F0FA7AA500A67AE5A72B1B0" },
+        "app_s_key": { "key": "18709C1192FEAA38F477BF6B0A6CB7E5" }
+      }
+    }
+  },
+  {
+    "ids": {
+      "device_id": "e2ed3",
+      "dev_eui": "1102030405060703",
+      "join_eui": "1102030405060703"
+    },
+    "name": "edge2lora3",
+    "description": "edge2lora  3",
+    "lorawan_version": "MAC_V1_0_2",
+    "lorawan_phy_version": "PHY_V1_0_2_REV_B",
+    "frequency_plan_id": "EU_863_870_TTN",
+    "supports_join": false,
+    "mac_settings": { "resets_f_cnt": true },
+    "root_keys": { "app_key": { "key": "01020304050607080102030405060708" } },
+    "session": {
+      "dev_addr": "0036D013",
+      "keys": {
+        "f_nwk_s_int_key": { "key": "3FCAD3200F0FA7AA500A67AE5A72B1B0" },
+        "app_s_key": { "key": "18709C1192FEAA38F477BF6B0A6CB7E5" }
+      }
+    }
+  }
+]
