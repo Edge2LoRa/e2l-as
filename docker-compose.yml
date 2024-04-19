@@ -27,4 +27,5 @@ services:
 
 networks:
   e2l_network:
-    external: true
+    name: e2l_network
+    driver: overlay
