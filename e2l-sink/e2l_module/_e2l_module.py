@@ -20,6 +20,7 @@ from .__private__ import (
     SendLogMessage,
     SendJoinUpdateMessage,
 )
+from mqtt_module import MQTTModule
 import json
 import hashlib
 from threading import Thread, Lock
@@ -126,8 +127,28 @@ class E2LoRaModule:
             except:
                 log.info("DASHBOARD RPC ENDPOINT NOT AVAILABLE.")
                 self.dashboard_rpc_stub = None
-        # MQTT CLIENT
-        self.mqtt_client = None
+        #############################
+        #   INIT TTS MQTT CLIENT    #
+        #############################
+        log.debug("Connecting to TTS MQTT broker...")
+        self.tts_mqtt_client = MQTTModule(
+            username=os.getenv("TTS_MQTT_USERNAME"),
+            password=os.getenv("TTS_MQTT_PASSWORD"),
+            host=os.getenv("TTS_MQTT_HOST"),
+            port=int(os.getenv("TTS_MQTT_PORT")),
+        )
+        log.debug("Connected to E2L MQTT broker")
+        #############################
+        #   INIT E2L MQTT CLIENT    #
+        #############################
+        log.debug("Connecting to E2L MQTT broker...")
+        self.e2l_mqtt_client = MQTTModule(
+            username=os.getenv("E2L_MQTT_USERNAME"),
+            password=os.getenv("E2L_MQTT_PASSWORD"),
+            host=os.getenv("E2L_MQTT_HOST"),
+            port=int(os.getenv("E2L_MQTT_PORT")),
+        )
+        log.debug("Connected to E2L MQTT broker")
         # Aggregation Utils
         self.aggregation_function = None
         self.window_size = None
@@ -711,7 +732,7 @@ class E2LoRaModule:
         base_topic = os.getenv("MQTT_BASE_TOPIC")
         topic = f"{base_topic}{dev_id}/down/replace"
 
-        res = self.mqtt_client.publish_to_topic(topic=topic, message=downlink_frame_str)
+        res = self.tts_mqtt_client.publish_to_topic(topic=topic, message=downlink_frame_str)
 
         return 0
 
@@ -1030,7 +1051,6 @@ class E2LoRaModule:
         log.debug(
             f"Received Legacy Frame from Legacy Route. Data: {frame_payload}. Dev: {dev_addr}."
         )
-        # COMMENT OUT FOR BETTER STATS. TTS MQTT BROKER QoS 0
         self.statistics["dm"]["rx_legacy_frames"] = (
             self.statistics["dm"].get("rx_legacy_frames", 0) + 1
         )
@@ -1361,10 +1381,159 @@ class E2LoRaModule:
             shut_thread.start()
 
     """
-        @brief  This function set the mqtt client object.
-        @param mqtt_client: The mqtt client object.
+        @brief: This function is called when a new message is received from the
+                MQTT broker.
+        @param client: The client object.
+        @param userdata: The user data.
+        @param message: The message.
+        @return: None.
+    """
+
+    def _tts_subscribe_callback(self, client, userdata, message):
+        topic = message.topic
+        payload_str = message.payload.decode("utf-8")
+        payload = json.loads(payload_str)
+        end_devices_infos = payload.get("end_device_ids")
+        dev_id = end_devices_infos.get("device_id")
+        dev_eui = end_devices_infos.get("dev_eui")
+        dev_addr = end_devices_infos.get("dev_addr")
+        if "/join" in topic:
+            ret = self.handle_otaa_join_request(
+                dev_id=dev_id, dev_eui=dev_eui, dev_addr=dev_addr
+            )
+            return ret
+        up_msg = payload.get("uplink_message")
+        up_port = up_msg.get("f_port")
+        uplink_message = payload.get("uplink_message")
+        fcnt = uplink_message.get("f_cnt")
+        rx_metadata = uplink_message.get("rx_metadata")[0]
+        rx_timestamp = rx_metadata.get("timestamp")
+        frame_payload = uplink_message.get("frm_payload")
+        ret = 0
+        if up_port == DEFAULT_APP_PORT:
+            log.debug("Received Legacy Frame")
+            return self.handle_legacy_data(
+                dev_id, dev_eui, dev_addr, fcnt, rx_timestamp, frame_payload
+            )
+        elif up_port == DEFAULT_E2L_JOIN_PORT:
+            log.debug("Received Edge Join Frame")
+            ret = self.handle_edge_join_request(
+                dev_id=dev_id,
+                dev_eui=dev_eui,
+                dev_addr=dev_addr,
+                dev_pub_key_compressed_base_64=frame_payload,
+            )
+        elif up_port == DEFAULT_E2L_APP_PORT:
+            log.debug("Received Edge Frame")
+            ret = self.handle_edge_data_from_legacy(
+                dev_id, dev_eui, dev_addr, frame_payload
+            )
+        else:
+            log.warning(f"Unknown frame port: {up_port}")
+
+        if ret < 0:
+            log.error(f"Error handling frame: {ret}")
+
+        return ret
+
+    """
+        @brief  This function init the tts mqtt client object.
         @return None.
     """
 
-    def set_mqtt_client(self, mqtt_client):
-        self.mqtt_client = mqtt_client
+    def _init_tts_mqtt_client(self):
+        # SUBSCRIBE TO UPLINK MESSAGE TOPIC
+        uplink_topic = os.getenv("TTS_MQTT_UPLINK_TOPIC")
+        log.debug(f"Subscribing to TTS MQTT topic {uplink_topic}...")
+        self.tts_mqtt_client.subscribe_to_topic(topic=uplink_topic, callback=self._tts_subscribe_callback)
+        log.debug(f"Subscribed to E2L MQTT topic {uplink_topic}")
+        
+        # SUBSCRIBE TO JOIN MESSAGE TOPIC
+        join_topic = os.getenv("TTS_MQTT_OTAA_TOPIC")
+        log.debug(f"Subscribing to TTS MQTT topic {join_topic}...")
+        self.tts_mqtt_client.subscribe_to_topic(topic=join_topic, callback=self._tts_subscribe_callback)
+        log.debug(f"Subscribed to TTS MQTT topic {join_topic}")
+
+    """
+        @brief  This function wait for messages from the TTS MQTT broker.
+        @return None.
+        @note   This function is blocking and should never return.
+    """
+    def _tts_mqtt_client_wait_for_message(self):
+        log.info("Waiting for messages from TTS MQTT broker...")
+        self.tts_mqtt_client.wait_for_message()
+
+    
+    def _e2l_subscribe_callback(self, client, userdata, message):
+        """
+        {
+            'Device Address': '0036D012',
+            'Average RSSI': -39.0,
+            'Average SNR': 9.200000000000001,
+            'fcnts': [7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7],
+            'timestamps': [1713361780, 1713361780, 1713361780, 1713361780, 1713361780, 1713361780, 1713361780, 1713361781, 1713361781, 1713361781, 1713361781, 1713361781]
+        }
+        def handle_edge_data(
+            self,
+            gw_id,
+            dev_eui,
+            dev_addr,
+            aggregated_data,
+            fcnts,
+            timetag,
+            gw_log_message=None,
+        ):
+        """
+        payload = json.loads(message.payload)
+        dev_addr = payload.get("Device Address")
+        for (dev_eui_it, dev_info) in self.active_directory["e2eds"].items():
+            if dev_info["dev_addr"] == dev_addr:
+                dev_eui = dev_eui_it
+                break
+
+        self.handle_edge_data(
+            gw_id="", # MISSING
+            dev_eui=dev_eui,
+            dev_addr=dev_eui,
+            aggregated_data= payload.get("Average RSSI"),
+            fcnts=payload.get("fcnts"),
+            timetag=payload["timestamps"][0], # MISSING
+            gw_log_message=None,
+        )
+
+
+
+    """
+        @brief  This function init the e2l mqtt client object.
+        @return None.
+    """
+
+    def _init_e2l_mqtt_client(self):
+        # SUBSCRIBE TO AGGREGATE MESSAGE TOPIC
+        aggr_topic = os.getenv("E2L_MQTT_AGGR_TOPIC")
+        log.debug(f"Subscribing to E2L MQTT topic {aggr_topic}...")
+        self.e2l_mqtt_client.subscribe_to_topic(topic=aggr_topic, callback=self._e2l_subscribe_callback)
+        log.debug(f"Subscribed to E2L MQTT topic {aggr_topic}")
+        
+
+    """
+        @brief  This function wait for messages from the E2L MQTT broker.
+        @return None.
+        @note   This function is blocking and should never return.
+    """
+    def _e2l_mqtt_client_wait_for_message(self):
+        log.info("Waiting for messages from E2L MQTT broker...")
+        self.e2l_mqtt_client.wait_for_message()
+
+
+    def mqtt_clients_init(self):
+        self._init_tts_mqtt_client()
+        self._init_e2l_mqtt_client()
+
+    def mqtt_clients_wait_for_message(self):
+        tts_thread = Thread(target=self._tts_mqtt_client_wait_for_message)
+        e2l_thread = Thread(target=self._e2l_mqtt_client_wait_for_message)
+        tts_thread.start()
+        e2l_thread.start()
+        tts_thread.join()
+        e2l_thread.join()
