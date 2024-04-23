@@ -1471,7 +1471,8 @@ class E2LoRaModule:
             'Average RSSI': -39.0,
             'Average SNR': 9.200000000000001,
             'fcnts': [7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7],
-            'timestamps': [1713361780, 1713361780, 1713361780, 1713361780, 1713361780, 1713361780, 1713361780, 1713361781, 1713361781, 1713361781, 1713361781, 1713361781]
+            'timestamps': [1713361780, 1713361780, 1713361780, 1713361780, 1713361780, 1713361780, 1713361780, 1713361781, 1713361781, 1713361781, 1713361781, 1713361781],
+            'timestamp_pub': 1713361781
         }
         def handle_edge_data(
             self,
@@ -1485,6 +1486,8 @@ class E2LoRaModule:
         ):
         """
         payload = json.loads(message.payload)
+        topic = message.topic
+        gw_id = topic.split("/")[0]
         dev_addr = payload.get("Device Address")
         for (dev_eui_it, dev_info) in self.active_directory["e2eds"].items():
             if dev_info["dev_addr"] == dev_addr:
@@ -1492,12 +1495,12 @@ class E2LoRaModule:
                 break
 
         self.handle_edge_data(
-            gw_id="", # MISSING
+            gw_id=gw_id,
             dev_eui=dev_eui,
             dev_addr=dev_eui,
             aggregated_data= payload.get("Average RSSI"),
             fcnts=payload.get("fcnts"),
-            timetag=payload["timestamps"][0], # MISSING
+            timetag=payload["timestamp_pub"],
             gw_log_message=None,
         )
 
