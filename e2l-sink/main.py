@@ -73,8 +73,8 @@ if __name__ == "__main__":
     #####################
     #   GET LINE ARGS   #
     #####################
-    experiment_id = None
-    if len(sys.argv) > 1:
+    experiment_id = os.getenv("MONGO_COLLECTION_NAME")
+    if experiment_id is None and len(sys.argv) > 1:
         experiment_id = sys.argv[1]
 
     #####################
