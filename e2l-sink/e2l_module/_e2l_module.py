@@ -1467,9 +1467,11 @@ class E2LoRaModule:
     def _e2l_subscribe_callback(self, client, userdata, message):
         """
         {
-            'Device Address': '0036D012',
-            'Average RSSI': -39.0,
-            'Average SNR': 9.200000000000001,
+            'dev_addr': '0036D012',
+            'aggregated_data': {
+                'avg_rssi': -39.0,
+                'avg_snr': 9.200000000000001 
+            },
             'fcnts': [7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7],
             'timestamps': [1713361780, 1713361780, 1713361780, 1713361780, 1713361780, 1713361780, 1713361780, 1713361781, 1713361781, 1713361781, 1713361781, 1713361781],
             'timestamp_pub': 1713361781
@@ -1498,7 +1500,7 @@ class E2LoRaModule:
             gw_id=gw_id,
             dev_eui=dev_eui,
             dev_addr=dev_eui,
-            aggregated_data= payload.get("Average RSSI"),
+            aggregated_data= payload.get("aggregated_data"),
             fcnts=payload.get("fcnts"),
             timetag=payload["timestamp_pub"],
             gw_log_message=None,
