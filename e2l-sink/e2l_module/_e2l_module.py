@@ -818,9 +818,9 @@ class E2LoRaModule:
                 self.active_directory["e2eds"].get(dev_eui) is not None
                 and self.active_directory["e2eds"][dev_eui].get("e2gw") is None
                 and (
-                    (index == 0 and dev_index % 4 < 2)
-                    or (index == 1 and dev_index % 4 >= 2)
-                    or len(self.e2ed_ids) < 10
+                    (index == 0 and dev_index % 2 == 0)
+                    or (index == 1 and dev_index % 2 == 1)
+                    or len(self.e2ed_ids) < 4
                 )
             ):
                 self.active_directory["e2eds"][dev_eui][
