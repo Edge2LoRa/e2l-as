@@ -137,11 +137,12 @@ class E2LoRaModule:
             host=os.getenv("TTS_MQTT_HOST"),
             port=int(os.getenv("TTS_MQTT_PORT")),
         )
-        log.debug("Connected to E2L MQTT broker")
+        log.debug("Connected to TTS MQTT broker")
         #############################
         #   INIT E2L MQTT CLIENT    #
         #############################
         log.debug("Connecting to E2L MQTT broker...")
+        time.sleep(DASHBOARD_TIMEOUT_SEC)
         self.e2l_mqtt_client = MQTTModule(
             username=os.getenv("E2L_MQTT_USERNAME"),
             password=os.getenv("E2L_MQTT_PASSWORD"),
@@ -286,7 +287,15 @@ class E2LoRaModule:
     """
 
     def _push_log_to_db(
-        self, module_id, dev_addr, log_message, frame_type, fcnt, timetag, gw_id=None
+        self,
+        module_id,
+        dev_addr,
+        log_message,
+        frame_type,
+        fcnt,
+        timetag,
+        timestamps=[],
+        gw_id=None,
     ):
         if self.collection is None:
             return -1
@@ -299,6 +308,7 @@ class E2LoRaModule:
             "log": log_message,
             "frame_type": frame_type,
             "fcnt": fcnt,
+            "timestamps": timestamps,
             "timetag_gw": timetag,
             "timetag_dm": timetag_dm,
         }
@@ -592,7 +602,6 @@ class E2LoRaModule:
             stats_obj["_id"] = self._get_now_isostring()
             stats_obj["type"] = STATS_DOC_TYPE
             log.debug("Pushing new stats obj to DB...")
-            print(json.dumps(stats_obj, indent=2))
             self.collection.insert_one(stats_obj)
             log.debug("Stats pushed to DB.")
 
@@ -732,7 +741,9 @@ class E2LoRaModule:
         base_topic = os.getenv("MQTT_BASE_TOPIC")
         topic = f"{base_topic}{dev_id}/down/replace"
 
-        res = self.tts_mqtt_client.publish_to_topic(topic=topic, message=downlink_frame_str)
+        res = self.tts_mqtt_client.publish_to_topic(
+            topic=topic, message=downlink_frame_str
+        )
 
         return 0
 
@@ -750,7 +761,6 @@ class E2LoRaModule:
     def handle_gw_pub_info(
         self, gw_rpc_endpoint_address, gw_rpc_endpoint_port, gw_pub_key_compressed
     ):
-        log.debug("############################## KJHAKSHKSHKJSHAJKSHAKSHAJKH")
         # Retireve Info
         gw_pub_key = ECC.import_key(gw_pub_key_compressed, curve_name="P-256")
         g_as_gw_point = gw_pub_key.pointQ * self.ephimeral_private_key.d
@@ -1088,6 +1098,7 @@ class E2LoRaModule:
         aggregated_data,
         fcnts,
         timetag,
+        timestamps=[],
         gw_log_message=None,
     ):
         log.debug(
@@ -1100,6 +1111,7 @@ class E2LoRaModule:
             log_message=f"Received Aggregate Frame from {dev_addr}",
             frame_type=EDGE_FRAME_AGGREGATE,
             fcnt=fcnts,
+            timestamps=timestamps,
             timetag=timetag,
         )
         self.statistics["dm"]["rx_e2l_frames"] = (
@@ -1445,13 +1457,17 @@ class E2LoRaModule:
         # SUBSCRIBE TO UPLINK MESSAGE TOPIC
         uplink_topic = os.getenv("TTS_MQTT_UPLINK_TOPIC")
         log.debug(f"Subscribing to TTS MQTT topic {uplink_topic}...")
-        self.tts_mqtt_client.subscribe_to_topic(topic=uplink_topic, callback=self._tts_subscribe_callback)
+        self.tts_mqtt_client.subscribe_to_topic(
+            topic=uplink_topic, callback=self._tts_subscribe_callback
+        )
         log.debug(f"Subscribed to E2L MQTT topic {uplink_topic}")
-        
+
         # SUBSCRIBE TO JOIN MESSAGE TOPIC
         join_topic = os.getenv("TTS_MQTT_OTAA_TOPIC")
         log.debug(f"Subscribing to TTS MQTT topic {join_topic}...")
-        self.tts_mqtt_client.subscribe_to_topic(topic=join_topic, callback=self._tts_subscribe_callback)
+        self.tts_mqtt_client.subscribe_to_topic(
+            topic=join_topic, callback=self._tts_subscribe_callback
+        )
         log.debug(f"Subscribed to TTS MQTT topic {join_topic}")
 
     """
@@ -1459,23 +1475,21 @@ class E2LoRaModule:
         @return None.
         @note   This function is blocking and should never return.
     """
+
     def _tts_mqtt_client_wait_for_message(self):
         log.info("Waiting for messages from TTS MQTT broker...")
         self.tts_mqtt_client.wait_for_message()
 
-    
     def _e2l_subscribe_callback(self, client, userdata, message):
         """
         {
-            'dev_addr': '0036D012',
-            'aggregated_data': {
-                'avg_rssi': -39.0,
-                'avg_snr': 9.200000000000001 
-            },
-            'fcnts': [7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7],
-            'timestamps': [1713361780, 1713361780, 1713361780, 1713361780, 1713361780, 1713361780, 1713361780, 1713361781, 1713361781, 1713361781, 1713361781, 1713361781],
-            'timestamp_pub': 1713361781
+            'devaddr': '0036D012',
+            'aggregated_data': {'avg_rssi': -33.0, 'avg_snr': 9.2},
+            'fcnts': [11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27],
+            'timestamps': [1714138009, 1714138010, 1714138010, 1714138011, 1714138011, 1714138011, 1714138012, 1714138013, 1714138013, 1714138013, 1714138014, 1714138014, 1714138014, 1714138014, 1714138014, 1714138015, 1714138015],
+            'timestamp_pub': 1714138021072
         }
+
         def handle_edge_data(
             self,
             gw_id,
@@ -1490,8 +1504,8 @@ class E2LoRaModule:
         payload = json.loads(message.payload)
         topic = message.topic
         gw_id = topic.split("/")[0]
-        dev_addr = payload.get("Device Address")
-        for (dev_eui_it, dev_info) in self.active_directory["e2eds"].items():
+        dev_addr = payload.get("devaddr")
+        for dev_eui_it, dev_info in self.active_directory["e2eds"].items():
             if dev_info["dev_addr"] == dev_addr:
                 dev_eui = dev_eui_it
                 break
@@ -1499,14 +1513,13 @@ class E2LoRaModule:
         self.handle_edge_data(
             gw_id=gw_id,
             dev_eui=dev_eui,
-            dev_addr=dev_eui,
-            aggregated_data= payload.get("aggregated_data"),
+            dev_addr=dev_addr,
+            aggregated_data=payload.get("aggregated_data"),
             fcnts=payload.get("fcnts"),
-            timetag=payload["timestamp_pub"],
+            timetag=payload.get("timestamp_pub"),
+            timestamps=payload.get("timestamps", []),
             gw_log_message=None,
         )
-
-
 
     """
         @brief  This function init the e2l mqtt client object.
@@ -1517,19 +1530,20 @@ class E2LoRaModule:
         # SUBSCRIBE TO AGGREGATE MESSAGE TOPIC
         aggr_topic = os.getenv("E2L_MQTT_AGGR_TOPIC")
         log.debug(f"Subscribing to E2L MQTT topic {aggr_topic}...")
-        self.e2l_mqtt_client.subscribe_to_topic(topic=aggr_topic, callback=self._e2l_subscribe_callback)
+        self.e2l_mqtt_client.subscribe_to_topic(
+            topic=aggr_topic, callback=self._e2l_subscribe_callback
+        )
         log.debug(f"Subscribed to E2L MQTT topic {aggr_topic}")
-        
 
     """
         @brief  This function wait for messages from the E2L MQTT broker.
         @return None.
         @note   This function is blocking and should never return.
     """
+
     def _e2l_mqtt_client_wait_for_message(self):
         log.info("Waiting for messages from E2L MQTT broker...")
         self.e2l_mqtt_client.wait_for_message()
-
 
     def mqtt_clients_init(self):
         self._init_tts_mqtt_client()

@@ -2,6 +2,7 @@ version: "3"
 
 services:
   e2l_as_broker:
+    hostname: e2l-as-broker
     image: e2l-as-broker:v1.0.0
     ports:
       - "10884:1883"
@@ -13,6 +14,7 @@ services:
       - e2l_network
 
   e2l_sink:
+    hostname: e2l-sink1
     image: e2l-sink:v1.0.0
     depends_on:
       - e2l_as_broker
