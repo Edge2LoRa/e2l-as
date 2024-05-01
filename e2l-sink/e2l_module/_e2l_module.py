@@ -157,8 +157,10 @@ class E2LoRaModule:
         self.ed_2_gw_selection = None
         self.ed_3_gw_selection = None
         # Load Device JSON
-        # if self.collection is not None:
+        split_devices = os.getenv("SPLIT_DEVICES", "1")
+        self.split_devices = True if split_devices == "1" else False
         self._load_device_json()
+        # GW shit mode
         gw_shut_enabled = os.getenv("GW_SHUT", "0")
         self.gw_shut_enabled = True if gw_shut_enabled == "1" else False
         if self.gw_shut_enabled:
@@ -806,40 +808,56 @@ class E2LoRaModule:
         if log_type is not None:
             self._send_log(type=log_type, message=log_message)
 
-        # if self.collection is None:
-        #     return 0
-
         # Check the preloaded devices
-        total_devices = len(self.e2ed_ids)
         device_list = []
         for dev_index in range(len(self.e2ed_ids)):
+            # Create Device info
             dev_eui = self.e2ed_ids[dev_index]
-            if (
-                self.active_directory["e2eds"].get(dev_eui) is not None
-                and self.active_directory["e2eds"][dev_eui].get("e2gw") is None
-                and (
-                    (index == 0 and dev_index % 2 == 0)
-                    or (index == 1 and dev_index % 2 == 1)
-                    or len(self.e2ed_ids) < 4
+            if self.active_directory["e2eds"].get(dev_eui) is None:
+                continue
+            dev_info = self.active_directory["e2eds"].get(dev_eui)
+            edge_s_enc_key = dev_info.get("edgeSEncKey")
+            edge_s_int_key = dev_info.get("edgeSIntKey")
+            if edge_s_enc_key is None or edge_s_int_key:
+                continue
+            edge_s_enc_key_bytes = bytes.fromhex(edge_s_enc_key)
+            edge_s_int_key_bytes = bytes.fromhex(edge_s_int_key)
+
+            # Check if GW is already assigned.
+            assigned_gw = dev_info.get("e2gw")
+            if assigned_gw is None:
+                gw_index = 0
+                if self.split_devices:
+                    gw_index = dev_index % 2
+                assigned_gw = self.e2gw_ids[gw_index]
+                dev_info["e2gw"] = assigned_gw
+            if assigned_gw != gw_rpc_endpoint_address:
+                device_list.append(
+                    Device(
+                        dev_eui=dev_eui,
+                        dev_addr=self.active_directory["e2eds"][dev_eui]["dev_addr"],
+                        edge_s_enc_key=b"",
+                        edge_s_int_key=b"",
+                        assigned_gw=assigned_gw,
+                    )
                 )
-            ):
-                self.active_directory["e2eds"][dev_eui][
-                    "e2gw"
-                ] = gw_rpc_endpoint_address
-                edge_s_enc_key = self.active_directory["e2eds"][dev_eui]["edgeSEncKey"]
-                edge_s_int_key = self.active_directory["e2eds"][dev_eui]["edgeSIntKey"]
-                edge_s_enc_key_bytes = bytes.fromhex(edge_s_enc_key)
-                edge_s_int_key_bytes = bytes.fromhex(edge_s_int_key)
+            else:
                 device_list.append(
                     Device(
                         dev_eui=dev_eui,
                         dev_addr=self.active_directory["e2eds"][dev_eui]["dev_addr"],
                         edge_s_enc_key=edge_s_enc_key_bytes,
                         edge_s_int_key=edge_s_int_key_bytes,
+                        assigned_gw=assigned_gw,
                     )
                 )
-        log.debug(f"Sending {len(device_list)} to {gw_rpc_endpoint_address}")
-        stub.add_devices(E2LDevicesInfoComplete(device_list=device_list))
+
+        for gw_id, gw_info in self.active_directory["e2gws"]:
+            gw_stub = gw_info.get("e2gw_stub")
+            if gw_stub is None:
+                continue
+            log.debug(f"Sending {len(device_list)} to {gw_id}")
+            gw_stub.add_devices(E2LDevicesInfoComplete(device_list=device_list))
 
         return 0
 
