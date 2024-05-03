@@ -296,6 +296,7 @@ class E2LoRaModule:
         frame_type,
         fcnt,
         timetag,
+        dev_addrs=[],
         timestamps=[],
         gw_id=None,
     ):
@@ -310,6 +311,7 @@ class E2LoRaModule:
             "log": log_message,
             "frame_type": frame_type,
             "fcnt": fcnt,
+            "dev_addrs": dev_addrs,
             "timestamps": timestamps,
             "timetag_gw": timetag,
             "timetag_dm": timetag_dm,
@@ -1116,6 +1118,7 @@ class E2LoRaModule:
         aggregated_data,
         fcnts,
         timetag,
+        dev_addrs=[],
         timestamps=[],
         gw_log_message=None,
     ):
@@ -1129,6 +1132,7 @@ class E2LoRaModule:
             log_message=f"Received Aggregate Frame from {dev_addr}",
             frame_type=EDGE_FRAME_AGGREGATE,
             fcnt=fcnts,
+            dev_addrs=dev_addrs,
             timestamps=timestamps,
             timetag=timetag,
         )
@@ -1149,11 +1153,12 @@ class E2LoRaModule:
         #         self.statistics["gateways"][self.e2gw_ids[i]]["tx"] = self.statistics["gateways"][self.e2gw_ids[i]].get("tx", 0) + 1
 
         # SEND LOG
-        if dev_eui in self.e2ed_ids and self.e2ed_ids.index(dev_eui) == 0:
-            self.statistics["aggregation_result"] = aggregated_data
-        self._send_log(
-            type=LOG_ED, message=f"E2L Frame Received by DM (Dev: {dev_addr})"
-        )
+        if self.dashboard_rpc_stub is not None:
+            if dev_eui in self.e2ed_ids and self.e2ed_ids.index(dev_eui) == 0:
+                self.statistics["aggregation_result"] = aggregated_data
+            self._send_log(
+                type=LOG_ED, message=f"E2L Frame Received by DM (Dev: {dev_addr})"
+            )
 
         if gw_log_message is not None:
             index = self.e2gw_ids.index(gw_id)
@@ -1515,6 +1520,7 @@ class E2LoRaModule:
             dev_addr,
             aggregated_data,
             fcnts,
+            dev_addrs,
             timetag,
             gw_log_message=None,
         ):
@@ -1523,10 +1529,14 @@ class E2LoRaModule:
         topic = message.topic
         gw_id = topic.split("/")[0]
         dev_addr = payload.get("devaddr")
-        for dev_eui_it, dev_info in self.active_directory["e2eds"].items():
-            if dev_info["dev_addr"] == dev_addr:
-                dev_eui = dev_eui_it
-                break
+        dev_addrs = payload.get("devaddrs")
+        if dev_addrs is None or len(dev_addrs) == 0:
+            for dev_eui_it, dev_info in self.active_directory["e2eds"].items():
+                if dev_info["dev_addr"] == dev_addr:
+                    dev_eui = dev_eui_it
+                    break
+        else:
+            dev_eui = None
 
         self.handle_edge_data(
             gw_id=gw_id,
@@ -1535,6 +1545,7 @@ class E2LoRaModule:
             aggregated_data=payload.get("aggregated_data"),
             fcnts=payload.get("fcnts"),
             timetag=payload.get("timestamp_pub"),
+            dev_addrs=dev_addrs,
             timestamps=payload.get("timestamps", []),
             gw_log_message=None,
         )
