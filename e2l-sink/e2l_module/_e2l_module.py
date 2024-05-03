@@ -854,7 +854,7 @@ class E2LoRaModule:
                     )
                 )
 
-        for gw_id, gw_info in self.active_directory["e2gws"]:
+        for gw_id, gw_info in self.active_directory["e2gws"].items():
             gw_stub = gw_info.get("e2gw_stub")
             if gw_stub is None:
                 continue
