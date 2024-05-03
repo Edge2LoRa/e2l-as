@@ -297,6 +297,7 @@ class E2LoRaModule:
         fcnt,
         timetag,
         dev_addrs=[],
+        aggregated_data = {},
         timestamps=[],
         gw_id=None,
     ):
@@ -313,6 +314,7 @@ class E2LoRaModule:
             "fcnt": fcnt,
             "dev_addrs": dev_addrs,
             "timestamps": timestamps,
+            "aggregated_data": aggregated_data,
             "timetag_gw": timetag,
             "timetag_dm": timetag_dm,
         }
@@ -1125,7 +1127,7 @@ class E2LoRaModule:
         gw_log_message=None,
     ):
         log.debug(
-            f"Received Edge Frame from E2ED. Data: {aggregated_data}. Dev Addr: {dev_addr}. E2GW: {gw_id}."
+            f"Received Edge Frame from E2ED. Dev Addr: {dev_addr}. E2GW: {gw_id}."
         )
         self._push_log_to_db(
             module_id="DM",
@@ -1135,6 +1137,7 @@ class E2LoRaModule:
             frame_type=EDGE_FRAME_AGGREGATE,
             fcnt=fcnts,
             dev_addrs=dev_addrs,
+            aggregated_data=aggregated_data,
             timestamps=timestamps,
             timetag=timetag,
         )
