@@ -820,7 +820,7 @@ class E2LoRaModule:
             dev_info = self.active_directory["e2eds"].get(dev_eui)
             edge_s_enc_key = dev_info.get("edgeSEncKey")
             edge_s_int_key = dev_info.get("edgeSIntKey")
-            if edge_s_enc_key is None or edge_s_int_key:
+            if edge_s_enc_key is None or edge_s_int_key is None:
                 continue
             edge_s_enc_key_bytes = bytes.fromhex(edge_s_enc_key)
             edge_s_int_key_bytes = bytes.fromhex(edge_s_int_key)
@@ -831,6 +831,8 @@ class E2LoRaModule:
                 gw_index = 0
                 if self.split_devices:
                     gw_index = dev_index % 2
+                if gw_index >= len(self.e2gw_ids):
+                    continue
                 assigned_gw = self.e2gw_ids[gw_index]
                 dev_info["e2gw"] = assigned_gw
             if assigned_gw != gw_rpc_endpoint_address:
