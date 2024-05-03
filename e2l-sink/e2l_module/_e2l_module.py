@@ -834,32 +834,18 @@ class E2LoRaModule:
                 assigned_gw = self.e2gw_ids[gw_index]
                 dev_info["e2gw"] = assigned_gw
             if assigned_gw != gw_rpc_endpoint_address:
-                device_list.append(
-                    Device(
-                        dev_eui=dev_eui,
-                        dev_addr=self.active_directory["e2eds"][dev_eui]["dev_addr"],
-                        edge_s_enc_key=b"",
-                        edge_s_int_key=b"",
-                        assigned_gw=assigned_gw,
-                    )
-                )
-            else:
-                device_list.append(
-                    Device(
-                        dev_eui=dev_eui,
-                        dev_addr=self.active_directory["e2eds"][dev_eui]["dev_addr"],
-                        edge_s_enc_key=edge_s_enc_key_bytes,
-                        edge_s_int_key=edge_s_int_key_bytes,
-                        assigned_gw=assigned_gw,
-                    )
-                )
-
-        for gw_id, gw_info in self.active_directory["e2gws"].items():
-            gw_stub = gw_info.get("e2gw_stub")
-            if gw_stub is None:
                 continue
-            log.debug(f"Sending {len(device_list)} to {gw_id}")
-            gw_stub.add_devices(E2LDevicesInfoComplete(device_list=device_list))
+            device_list.append(
+                Device(
+                    dev_eui=dev_eui,
+                    dev_addr=self.active_directory["e2eds"][dev_eui]["dev_addr"],
+                    edge_s_enc_key=edge_s_enc_key_bytes,
+                    edge_s_int_key=edge_s_int_key_bytes,
+                )
+            )
+
+        gw_stub = self.active_directory["e2gws"][gw_rpc_endpoint_address]["e2gw_stub"]
+        gw_stub.add_devices(E2LDevicesInfoComplete(device_list=device_list))
 
         return 0
 
