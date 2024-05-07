@@ -8,7 +8,6 @@ import grpc
 from e2gw_rpc_client import (
     edge2gateway_pb2_grpc,
     EdPubInfo,
-    AggregationParams,
     E2LDeviceInfo,
     E2LDevicesInfoComplete,
     Device,
@@ -151,8 +150,6 @@ class E2LoRaModule:
         )
         log.debug("Connected to E2L MQTT broker")
         # Aggregation Utils
-        self.aggregation_function = None
-        self.window_size = None
         self.ed_1_gw_selection = None
         self.ed_2_gw_selection = None
         self.ed_3_gw_selection = None
@@ -452,22 +449,6 @@ class E2LoRaModule:
         aggregation_function,
         window_size,
     ):
-        # UPDATE AGGREGATION PARAMETERS
-        if (
-            self.window_size is None
-            or self.aggregation_function is None
-            or self.window_size != window_size
-            or self.aggregation_function != aggregation_function
-        ):
-            self.window_size = window_size
-            self.aggregation_function = aggregation_function
-            for e2gw_id in self.e2gw_ids:
-                gw_info = self.active_directory["e2gws"].get(e2gw_id)
-                gw_stub = gw_info.get("e2gw_stub")
-                new_aggregation_params = AggregationParams(
-                    aggregation_function=aggregation_function, window_size=window_size
-                )
-                gw_stub.update_aggregation_params(new_aggregation_params)
 
         rejoin_command_base64 = base64.b64encode(REJOIN_COMMAND.encode("utf-8")).decode(
             "utf-8"
@@ -779,10 +760,6 @@ class E2LoRaModule:
             f"{gw_rpc_endpoint_address}:{gw_rpc_endpoint_port}"
         )
         stub = edge2gateway_pb2_grpc.Edge2GatewayStub(channel)
-        new_aggregation_params = AggregationParams(
-            aggregation_function=self.aggregation_function, window_size=self.window_size
-        )
-        stub.update_aggregation_params(new_aggregation_params)
 
         self.active_directory["e2gws"][gw_rpc_endpoint_address] = {
             "gw_rpc_endpoint_address": gw_rpc_endpoint_address,
@@ -834,6 +811,7 @@ class E2LoRaModule:
                 if self.split_devices:
                     gw_index = dev_index % 2
                 if gw_index >= len(self.e2gw_ids):
+                    # assigned_gw = "test"
                     continue
                 assigned_gw = self.e2gw_ids[gw_index]
                 dev_info["e2gw"] = assigned_gw
@@ -1149,13 +1127,6 @@ class E2LoRaModule:
         self.statistics["gateways"][gw_id]["tx"] = (
             self.statistics["gateways"][gw_id].get("tx", 0) + 1
         )
-
-        # for i in range(len(self.e2gw_ids)):
-        #     if self.statistics["gateways"].get(self.e2gw_ids[i]) is None:
-        #         continue
-        #     self.statistics["gateways"][self.e2gw_ids[i]]["rx"] = self.statistics["gateways"][self.e2gw_ids[i]].get("rx", 0) + self.window_size
-        #     if self.e2gw_ids[i] == gw_id:
-        #         self.statistics["gateways"][self.e2gw_ids[i]]["tx"] = self.statistics["gateways"][self.e2gw_ids[i]].get("tx", 0) + 1
 
         # SEND LOG
         if self.dashboard_rpc_stub is not None:
