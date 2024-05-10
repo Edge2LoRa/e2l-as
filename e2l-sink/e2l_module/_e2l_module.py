@@ -42,12 +42,6 @@ LOG_GW1 = 1
 LOG_GW2 = 2
 LOG_ED = 3
 
-# AGGREGATION FUNCTION TYPE
-AVG_ID = 1
-SUM_ID = 2
-MIN_ID = 3
-MAX_ID = 4
-
 # FRAME TYPES
 EDGE_FRAME = 1
 LEGACY_FRAME = 2
@@ -294,7 +288,7 @@ class E2LoRaModule:
         fcnt,
         timetag,
         dev_addrs=[],
-        aggregated_data = {},
+        aggregated_data={},
         timestamps=[],
         gw_id=None,
     ):
@@ -441,14 +435,7 @@ class E2LoRaModule:
         @return None
     """
 
-    def _update_params(
-        self,
-        ed_1_gw_selection,
-        ed_2_gw_selection,
-        ed_3_gw_selection,
-        aggregation_function,
-        window_size,
-    ):
+    def _update_params(self, ed_1_gw_selection, ed_2_gw_selection, ed_3_gw_selection):
 
         rejoin_command_base64 = base64.b64encode(REJOIN_COMMAND.encode("utf-8")).decode(
             "utf-8"
@@ -607,26 +594,7 @@ class E2LoRaModule:
             ed_1_gw_selection = response.ed_1_gw_selection
             ed_2_gw_selection = response.ed_2_gw_selection
             ed_3_gw_selection = response.ed_3_gw_selection
-            aggregation_function_str = response.process_function
-            aggregation_function = AVG_ID
-            if aggregation_function_str == "mean":
-                aggregation_function = AVG_ID
-            elif aggregation_function_str == "sum":
-                aggregation_function = SUM_ID
-            elif aggregation_function_str == "min":
-                aggregation_function = MIN_ID
-            elif aggregation_function_str == "max":
-                aggregation_function = MAX_ID
-            else:
-                log.error("Unknown aggregation function. Setting to AVG.")
-            window_size = response.process_window
-            self._update_params(
-                ed_1_gw_selection,
-                ed_2_gw_selection,
-                ed_3_gw_selection,
-                aggregation_function,
-                window_size,
-            )
+            self._update_params(ed_1_gw_selection, ed_2_gw_selection, ed_3_gw_selection)
             time.sleep(self.default_sleep_seconds)
 
     """
@@ -1315,18 +1283,7 @@ class E2LoRaModule:
         if self.collection is not None and gw_id in self.e2gw_ids:
             log.debug("Pushing sys stats in DB")
             self.collection.insert_one(gw_sys_stats)
-        default_window_size = os.getenv("DEFAULT_AGGR_WINDOWS_SIZE")
-        if default_window_size is None or not default_window_size.isnumeric():
-            default_window_size = 10
-        else:
-            default_window_size = int(default_window_size)
-        self._update_params(
-            None,
-            None,
-            None,
-            AVG_ID,
-            default_window_size,
-        )
+        self._update_params(None, None, None)
         return 0
 
     """
