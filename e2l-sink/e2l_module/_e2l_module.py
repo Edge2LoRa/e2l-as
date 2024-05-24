@@ -724,6 +724,9 @@ class E2LoRaModule:
         )
 
         # Init RPC Client
+        log.debug(
+            f"Init RPC Client for GW {gw_rpc_endpoint_address}:{gw_rpc_endpoint_port}"
+        )
         channel = grpc.insecure_channel(
             f"{gw_rpc_endpoint_address}:{gw_rpc_endpoint_port}"
         )
@@ -1075,6 +1078,12 @@ class E2LoRaModule:
         log.debug(
             f"Received Edge Frame from E2ED. Dev Addr: {dev_addr}. E2GW: {gw_id}."
         )
+        log.debug(f"Aggregated Data: {aggregated_data}")
+        log.debug(f"FCNTs: {fcnts}")
+        log.debug(f"Dev Addrs: {dev_addrs}")
+        log.debug(f"Timestamps: {timestamps}")
+        log.debug(f"Timetag: {timetag}")
+
         self._push_log_to_db(
             module_id="DM",
             dev_addr=dev_addr,
