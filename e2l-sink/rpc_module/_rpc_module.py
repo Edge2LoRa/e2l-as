@@ -15,6 +15,7 @@ class Edge2LoRaApplicationServer(
         super().__init__()
         self.e2l_module = e2l_module
 
+    # NOT USED
     def register_function(self, callback):
         self.data_received_callback = callback
 
@@ -30,6 +31,7 @@ class Edge2LoRaApplicationServer(
             return ResponseMessage(status_code=500, message=b"Error")
         return ResponseMessage(status_code=200, message=b"Success")
 
+    # NOT USED
     def new_data(self, request, context):
         # now = math.floor(time.time() * 1000)
         gw_id = request.gw_id
@@ -96,12 +98,12 @@ class Edge2LoRaApplicationServer(
         edge_frames = request.edge_frames
         edge_fcnts_it = list(request.edge_fcnts)
         edge_fcnts = []
-        for elem in legacy_fcnts_it:
+        for elem in edge_fcnts_it:
             edge_fcnts.append({"dev_addr": elem.dev_addr, "fcnt": elem.fcnt})
         edge_not_processed_frames = request.edge_not_processed_frames
         edge_not_processed_fcnts_it = list(request.edge_not_processed_fcnts)
         edge_not_processed_fcnts = []
-        for elem in legacy_fcnts_it:
+        for elem in edge_not_processed_fcnts_it:
             edge_not_processed_fcnts.append(
                 {"dev_addr": elem.dev_addr, "fcnt": elem.fcnt}
             )

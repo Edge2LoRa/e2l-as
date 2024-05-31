@@ -143,6 +143,12 @@ class E2LoRaModule:
             port=int(os.getenv("E2L_MQTT_PORT")),
         )
         log.debug("Connected to E2L MQTT broker")
+        self._control_methods = {
+            "store_e2gw_pub_info": self.handle_gw_pub_info,
+            "gw_log": self.handle_gw_log,
+            "sys_log": self.handle_sys_log,
+            "gw_frames_stats": self.handle_gw_frames_stats,
+        }
         # Aggregation Utils
         self.ed_1_gw_selection = None
         self.ed_2_gw_selection = None
@@ -1445,28 +1451,7 @@ class E2LoRaModule:
         log.info("Waiting for messages from TTS MQTT broker...")
         self.tts_mqtt_client.wait_for_message()
 
-    def _e2l_subscribe_callback(self, client, userdata, message):
-        """
-        {
-            'devaddr': '0036D012',
-            'aggregated_data': {'avg_rssi': -33.0, 'avg_snr': 9.2},
-            'fcnts': [11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27],
-            'timestamps': [1714138009, 1714138010, 1714138010, 1714138011, 1714138011, 1714138011, 1714138012, 1714138013, 1714138013, 1714138013, 1714138014, 1714138014, 1714138014, 1714138014, 1714138014, 1714138015, 1714138015],
-            'timestamp_pub': 1714138021072
-        }
-
-        def handle_edge_data(
-            self,
-            gw_id,
-            dev_eui,
-            dev_addr,
-            aggregated_data,
-            fcnts,
-            dev_addrs,
-            timetag,
-            gw_log_message=None,
-        ):
-        """
+    def _e2l_aggregation_callback(self, client, userdata, message):
         payload = json.loads(message.payload)
         topic = message.topic
         gw_id = topic.split("/")[0]
@@ -1480,7 +1465,7 @@ class E2LoRaModule:
         else:
             dev_eui = None
 
-        self.handle_edge_data(
+        return self.handle_edge_data(
             gw_id=gw_id,
             dev_eui=dev_eui,
             dev_addr=dev_addr,
@@ -1492,17 +1477,35 @@ class E2LoRaModule:
             gw_log_message=None,
         )
 
+    def _e2l_control_callback(self, client, userdata, message):
+        payload = json.loads(message.payload)
+        topic = message.topic
+        topic_array = topic.split("/")
+        gw_id = topic_array[0]
+        command = topic_array[1]
+        payload["gw_id"] = gw_id
+
+        control_method = self._control_methods.get(command, None)
+        if control_method is not None:
+            return control_method(**payload)
+
     """
         @brief  This function init the e2l mqtt client object.
         @return None.
     """
 
     def _init_e2l_mqtt_client(self):
+        # SUBSCRIBE TO CONTROL TOPIC
+        control_topic = os.getenv("E2L_MQTT_CONTROL_TOPIC")
+        log.debug(f"Subscribing to E2L MQTT topic {control_topic}...")
+        self.e2l_mqtt_client.subscribe_to_topic(
+            topic=control_topic, callback=self._e2l_control_callback
+        )
         # SUBSCRIBE TO AGGREGATE MESSAGE TOPIC
         aggr_topic = os.getenv("E2L_MQTT_AGGR_TOPIC")
         log.debug(f"Subscribing to E2L MQTT topic {aggr_topic}...")
         self.e2l_mqtt_client.subscribe_to_topic(
-            topic=aggr_topic, callback=self._e2l_subscribe_callback
+            topic=aggr_topic, callback=self._e2l_aggregation_callback
         )
         log.debug(f"Subscribed to E2L MQTT topic {aggr_topic}")
 
