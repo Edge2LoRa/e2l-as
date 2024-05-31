@@ -8,7 +8,6 @@ import grpc
 from e2gw_rpc_client import (
     edge2gateway_pb2_grpc,
     EdPubInfo,
-    AggregationParams,
     E2LDeviceInfo,
     E2LDevicesInfoComplete,
     Device,
@@ -20,6 +19,7 @@ from .__private__ import (
     SendLogMessage,
     SendJoinUpdateMessage,
 )
+from mqtt_module import MQTTModule
 import json
 import hashlib
 from threading import Thread, Lock
@@ -41,12 +41,6 @@ REJOIN_COMMAND = "REJOIN"
 LOG_GW1 = 1
 LOG_GW2 = 2
 LOG_ED = 3
-
-# AGGREGATION FUNCTION TYPE
-AVG_ID = 1
-SUM_ID = 2
-MIN_ID = 3
-MAX_ID = 4
 
 # FRAME TYPES
 EDGE_FRAME = 1
@@ -126,17 +120,38 @@ class E2LoRaModule:
             except:
                 log.info("DASHBOARD RPC ENDPOINT NOT AVAILABLE.")
                 self.dashboard_rpc_stub = None
-        # MQTT CLIENT
-        self.mqtt_client = None
+        #############################
+        #   INIT TTS MQTT CLIENT    #
+        #############################
+        log.debug("Connecting to TTS MQTT broker...")
+        self.tts_mqtt_client = MQTTModule(
+            username=os.getenv("TTS_MQTT_USERNAME"),
+            password=os.getenv("TTS_MQTT_PASSWORD"),
+            host=os.getenv("TTS_MQTT_HOST"),
+            port=int(os.getenv("TTS_MQTT_PORT")),
+        )
+        log.debug("Connected to TTS MQTT broker")
+        #############################
+        #   INIT E2L MQTT CLIENT    #
+        #############################
+        log.debug("Connecting to E2L MQTT broker...")
+        time.sleep(DASHBOARD_TIMEOUT_SEC)
+        self.e2l_mqtt_client = MQTTModule(
+            username=os.getenv("E2L_MQTT_USERNAME"),
+            password=os.getenv("E2L_MQTT_PASSWORD"),
+            host=os.getenv("E2L_MQTT_HOST"),
+            port=int(os.getenv("E2L_MQTT_PORT")),
+        )
+        log.debug("Connected to E2L MQTT broker")
         # Aggregation Utils
-        self.aggregation_function = None
-        self.window_size = None
         self.ed_1_gw_selection = None
         self.ed_2_gw_selection = None
         self.ed_3_gw_selection = None
         # Load Device JSON
-        # if self.collection is not None:
+        split_devices = os.getenv("SPLIT_DEVICES", "1")
+        self.split_devices = True if split_devices == "1" else False
         self._load_device_json()
+        # GW shit mode
         gw_shut_enabled = os.getenv("GW_SHUT", "0")
         self.gw_shut_enabled = True if gw_shut_enabled == "1" else False
         if self.gw_shut_enabled:
@@ -265,7 +280,17 @@ class E2LoRaModule:
     """
 
     def _push_log_to_db(
-        self, module_id, dev_addr, log_message, frame_type, fcnt, timetag, gw_id=None
+        self,
+        module_id,
+        dev_addr,
+        log_message,
+        frame_type,
+        fcnt,
+        timetag,
+        dev_addrs=[],
+        aggregated_data={},
+        timestamps=[],
+        gw_id=None,
     ):
         if self.collection is None:
             return -1
@@ -278,6 +303,9 @@ class E2LoRaModule:
             "log": log_message,
             "frame_type": frame_type,
             "fcnt": fcnt,
+            "dev_addrs": dev_addrs,
+            "timestamps": timestamps,
+            "aggregated_data": aggregated_data,
             "timetag_gw": timetag,
             "timetag_dm": timetag_dm,
         }
@@ -407,30 +435,7 @@ class E2LoRaModule:
         @return None
     """
 
-    def _update_params(
-        self,
-        ed_1_gw_selection,
-        ed_2_gw_selection,
-        ed_3_gw_selection,
-        aggregation_function,
-        window_size,
-    ):
-        # UPDATE AGGREGATION PARAMETERS
-        if (
-            self.window_size is None
-            or self.aggregation_function is None
-            or self.window_size != window_size
-            or self.aggregation_function != aggregation_function
-        ):
-            self.window_size = window_size
-            self.aggregation_function = aggregation_function
-            for e2gw_id in self.e2gw_ids:
-                gw_info = self.active_directory["e2gws"].get(e2gw_id)
-                gw_stub = gw_info.get("e2gw_stub")
-                new_aggregation_params = AggregationParams(
-                    aggregation_function=aggregation_function, window_size=window_size
-                )
-                gw_stub.update_aggregation_params(new_aggregation_params)
+    def _update_params(self, ed_1_gw_selection, ed_2_gw_selection, ed_3_gw_selection):
 
         rejoin_command_base64 = base64.b64encode(REJOIN_COMMAND.encode("utf-8")).decode(
             "utf-8"
@@ -571,7 +576,6 @@ class E2LoRaModule:
             stats_obj["_id"] = self._get_now_isostring()
             stats_obj["type"] = STATS_DOC_TYPE
             log.debug("Pushing new stats obj to DB...")
-            print(json.dumps(stats_obj, indent=2))
             self.collection.insert_one(stats_obj)
             log.debug("Stats pushed to DB.")
 
@@ -590,26 +594,7 @@ class E2LoRaModule:
             ed_1_gw_selection = response.ed_1_gw_selection
             ed_2_gw_selection = response.ed_2_gw_selection
             ed_3_gw_selection = response.ed_3_gw_selection
-            aggregation_function_str = response.process_function
-            aggregation_function = AVG_ID
-            if aggregation_function_str == "mean":
-                aggregation_function = AVG_ID
-            elif aggregation_function_str == "sum":
-                aggregation_function = SUM_ID
-            elif aggregation_function_str == "min":
-                aggregation_function = MIN_ID
-            elif aggregation_function_str == "max":
-                aggregation_function = MAX_ID
-            else:
-                log.error("Unknown aggregation function. Setting to AVG.")
-            window_size = response.process_window
-            self._update_params(
-                ed_1_gw_selection,
-                ed_2_gw_selection,
-                ed_3_gw_selection,
-                aggregation_function,
-                window_size,
-            )
+            self._update_params(ed_1_gw_selection, ed_2_gw_selection, ed_3_gw_selection)
             time.sleep(self.default_sleep_seconds)
 
     """
@@ -711,7 +696,9 @@ class E2LoRaModule:
         base_topic = os.getenv("MQTT_BASE_TOPIC")
         topic = f"{base_topic}{dev_id}/down/replace"
 
-        res = self.mqtt_client.publish_to_topic(topic=topic, message=downlink_frame_str)
+        res = self.tts_mqtt_client.publish_to_topic(
+            topic=topic, message=downlink_frame_str
+        )
 
         return 0
 
@@ -729,7 +716,6 @@ class E2LoRaModule:
     def handle_gw_pub_info(
         self, gw_rpc_endpoint_address, gw_rpc_endpoint_port, gw_pub_key_compressed
     ):
-        log.debug("############################## KJHAKSHKSHKJSHAJKSHAKSHAJKH")
         # Retireve Info
         gw_pub_key = ECC.import_key(gw_pub_key_compressed, curve_name="P-256")
         g_as_gw_point = gw_pub_key.pointQ * self.ephimeral_private_key.d
@@ -738,14 +724,13 @@ class E2LoRaModule:
         )
 
         # Init RPC Client
+        log.debug(
+            f"Init RPC Client for GW {gw_rpc_endpoint_address}:{gw_rpc_endpoint_port}"
+        )
         channel = grpc.insecure_channel(
             f"{gw_rpc_endpoint_address}:{gw_rpc_endpoint_port}"
         )
         stub = edge2gateway_pb2_grpc.Edge2GatewayStub(channel)
-        new_aggregation_params = AggregationParams(
-            aggregation_function=self.aggregation_function, window_size=self.window_size
-        )
-        stub.update_aggregation_params(new_aggregation_params)
 
         self.active_directory["e2gws"][gw_rpc_endpoint_address] = {
             "gw_rpc_endpoint_address": gw_rpc_endpoint_address,
@@ -775,40 +760,59 @@ class E2LoRaModule:
         if log_type is not None:
             self._send_log(type=log_type, message=log_message)
 
-        # if self.collection is None:
-        #     return 0
-
         # Check the preloaded devices
-        total_devices = len(self.e2ed_ids)
         device_list = []
         for dev_index in range(len(self.e2ed_ids)):
+            # Create Device info
             dev_eui = self.e2ed_ids[dev_index]
-            if (
-                self.active_directory["e2eds"].get(dev_eui) is not None
-                and self.active_directory["e2eds"][dev_eui].get("e2gw") is None
-                and (
-                    (index == 0 and dev_index % 4 < 2)
-                    or (index == 1 and dev_index % 4 >= 2)
-                    or len(self.e2ed_ids) < 10
+            if self.active_directory["e2eds"].get(dev_eui) is None:
+                continue
+            dev_info = self.active_directory["e2eds"].get(dev_eui)
+            edge_s_enc_key = dev_info.get("edgeSEncKey")
+            edge_s_int_key = dev_info.get("edgeSIntKey")
+            if edge_s_enc_key is None or edge_s_int_key is None:
+                continue
+            edge_s_enc_key_bytes = bytes.fromhex(edge_s_enc_key)
+            edge_s_int_key_bytes = bytes.fromhex(edge_s_int_key)
+
+            # Check if GW is already assigned.
+            assigned_gw = dev_info.get("e2gw")
+            if assigned_gw is None:
+                gw_index = 0
+                if self.split_devices:
+                    gw_index = dev_index % 2
+                if gw_index >= len(self.e2gw_ids):
+                    # assigned_gw = "test"
+                    continue
+                assigned_gw = self.e2gw_ids[gw_index]
+                dev_info["e2gw"] = assigned_gw
+            if assigned_gw != gw_rpc_endpoint_address:
+                device_list.append(
+                    Device(
+                        dev_eui=dev_eui,
+                        dev_addr=self.active_directory["e2eds"][dev_eui]["dev_addr"],
+                        edge_s_enc_key=b"",
+                        edge_s_int_key=b"",
+                        assigned_gw=assigned_gw,
+                    )
                 )
-            ):
-                self.active_directory["e2eds"][dev_eui][
-                    "e2gw"
-                ] = gw_rpc_endpoint_address
-                edge_s_enc_key = self.active_directory["e2eds"][dev_eui]["edgeSEncKey"]
-                edge_s_int_key = self.active_directory["e2eds"][dev_eui]["edgeSIntKey"]
-                edge_s_enc_key_bytes = bytes.fromhex(edge_s_enc_key)
-                edge_s_int_key_bytes = bytes.fromhex(edge_s_int_key)
+            else:
                 device_list.append(
                     Device(
                         dev_eui=dev_eui,
                         dev_addr=self.active_directory["e2eds"][dev_eui]["dev_addr"],
                         edge_s_enc_key=edge_s_enc_key_bytes,
                         edge_s_int_key=edge_s_int_key_bytes,
+                        assigned_gw=assigned_gw,
                     )
                 )
-        log.debug(f"Sending {len(device_list)} to {gw_rpc_endpoint_address}")
-        stub.add_devices(E2LDevicesInfoComplete(device_list=device_list))
+
+        for gw_id, gw_info in self.active_directory["e2gws"].items():
+            gw_stub = gw_info.get("e2gw_stub")
+            if gw_stub is None:
+                continue
+            log.debug(f"Sending {len(device_list)} to {gw_id}")
+            gw_stub.add_devices(E2LDevicesInfoComplete(device_list=device_list))
 
         return 0
 
@@ -1030,7 +1034,6 @@ class E2LoRaModule:
         log.debug(
             f"Received Legacy Frame from Legacy Route. Data: {frame_payload}. Dev: {dev_addr}."
         )
-        # COMMENT OUT FOR BETTER STATS. TTS MQTT BROKER QoS 0
         self.statistics["dm"]["rx_legacy_frames"] = (
             self.statistics["dm"].get("rx_legacy_frames", 0) + 1
         )
@@ -1068,11 +1071,19 @@ class E2LoRaModule:
         aggregated_data,
         fcnts,
         timetag,
+        dev_addrs=[],
+        timestamps=[],
         gw_log_message=None,
     ):
         log.debug(
-            f"Received Edge Frame from E2ED. Data: {aggregated_data}. Dev Addr: {dev_addr}. E2GW: {gw_id}."
+            f"Received Edge Frame from E2ED. Dev Addr: {dev_addr}. E2GW: {gw_id}."
         )
+        log.debug(f"Aggregated Data: {aggregated_data}")
+        log.debug(f"FCNTs: {fcnts}")
+        log.debug(f"Dev Addrs: {dev_addrs}")
+        log.debug(f"Timestamps: {timestamps}")
+        log.debug(f"Timetag: {timetag}")
+
         self._push_log_to_db(
             module_id="DM",
             dev_addr=dev_addr,
@@ -1080,6 +1091,9 @@ class E2LoRaModule:
             log_message=f"Received Aggregate Frame from {dev_addr}",
             frame_type=EDGE_FRAME_AGGREGATE,
             fcnt=fcnts,
+            dev_addrs=dev_addrs,
+            aggregated_data=aggregated_data,
+            timestamps=timestamps,
             timetag=timetag,
         )
         self.statistics["dm"]["rx_e2l_frames"] = (
@@ -1091,19 +1105,13 @@ class E2LoRaModule:
             self.statistics["gateways"][gw_id].get("tx", 0) + 1
         )
 
-        # for i in range(len(self.e2gw_ids)):
-        #     if self.statistics["gateways"].get(self.e2gw_ids[i]) is None:
-        #         continue
-        #     self.statistics["gateways"][self.e2gw_ids[i]]["rx"] = self.statistics["gateways"][self.e2gw_ids[i]].get("rx", 0) + self.window_size
-        #     if self.e2gw_ids[i] == gw_id:
-        #         self.statistics["gateways"][self.e2gw_ids[i]]["tx"] = self.statistics["gateways"][self.e2gw_ids[i]].get("tx", 0) + 1
-
         # SEND LOG
-        if dev_eui in self.e2ed_ids and self.e2ed_ids.index(dev_eui) == 0:
-            self.statistics["aggregation_result"] = aggregated_data
-        self._send_log(
-            type=LOG_ED, message=f"E2L Frame Received by DM (Dev: {dev_addr})"
-        )
+        if self.dashboard_rpc_stub is not None:
+            if dev_eui in self.e2ed_ids and self.e2ed_ids.index(dev_eui) == 0:
+                self.statistics["aggregation_result"] = aggregated_data
+            self._send_log(
+                type=LOG_ED, message=f"E2L Frame Received by DM (Dev: {dev_addr})"
+            )
 
         if gw_log_message is not None:
             index = self.e2gw_ids.index(gw_id)
@@ -1284,18 +1292,7 @@ class E2LoRaModule:
         if self.collection is not None and gw_id in self.e2gw_ids:
             log.debug("Pushing sys stats in DB")
             self.collection.insert_one(gw_sys_stats)
-        default_window_size = os.getenv("DEFAULT_AGGR_WINDOWS_SIZE")
-        if default_window_size is None or not default_window_size.isnumeric():
-            default_window_size = 10
-        else:
-            default_window_size = int(default_window_size)
-        self._update_params(
-            None,
-            None,
-            None,
-            AVG_ID,
-            default_window_size,
-        )
+        self._update_params(None, None, None)
         return 0
 
     """
@@ -1361,10 +1358,172 @@ class E2LoRaModule:
             shut_thread.start()
 
     """
-        @brief  This function set the mqtt client object.
-        @param mqtt_client: The mqtt client object.
+        @brief: This function is called when a new message is received from the
+                MQTT broker.
+        @param client: The client object.
+        @param userdata: The user data.
+        @param message: The message.
+        @return: None.
+    """
+
+    def _tts_subscribe_callback(self, client, userdata, message):
+        topic = message.topic
+        payload_str = message.payload.decode("utf-8")
+        payload = json.loads(payload_str)
+        end_devices_infos = payload.get("end_device_ids")
+        dev_id = end_devices_infos.get("device_id")
+        dev_eui = end_devices_infos.get("dev_eui")
+        dev_addr = end_devices_infos.get("dev_addr")
+        if "/join" in topic:
+            ret = self.handle_otaa_join_request(
+                dev_id=dev_id, dev_eui=dev_eui, dev_addr=dev_addr
+            )
+            return ret
+        up_msg = payload.get("uplink_message")
+        up_port = up_msg.get("f_port")
+        uplink_message = payload.get("uplink_message")
+        fcnt = uplink_message.get("f_cnt")
+        rx_metadata = uplink_message.get("rx_metadata")[0]
+        rx_timestamp = rx_metadata.get("timestamp")
+        frame_payload = uplink_message.get("frm_payload")
+        ret = 0
+        if up_port == DEFAULT_APP_PORT:
+            log.debug("Received Legacy Frame")
+            return self.handle_legacy_data(
+                dev_id, dev_eui, dev_addr, fcnt, rx_timestamp, frame_payload
+            )
+        elif up_port == DEFAULT_E2L_JOIN_PORT:
+            log.debug("Received Edge Join Frame")
+            ret = self.handle_edge_join_request(
+                dev_id=dev_id,
+                dev_eui=dev_eui,
+                dev_addr=dev_addr,
+                dev_pub_key_compressed_base_64=frame_payload,
+            )
+        elif up_port == DEFAULT_E2L_APP_PORT:
+            log.debug("Received Edge Frame")
+            ret = self.handle_edge_data_from_legacy(
+                dev_id, dev_eui, dev_addr, frame_payload
+            )
+        else:
+            log.warning(f"Unknown frame port: {up_port}")
+
+        if ret < 0:
+            log.error(f"Error handling frame: {ret}")
+
+        return ret
+
+    """
+        @brief  This function init the tts mqtt client object.
         @return None.
     """
 
-    def set_mqtt_client(self, mqtt_client):
-        self.mqtt_client = mqtt_client
+    def _init_tts_mqtt_client(self):
+        # SUBSCRIBE TO UPLINK MESSAGE TOPIC
+        uplink_topic = os.getenv("TTS_MQTT_UPLINK_TOPIC")
+        log.debug(f"Subscribing to TTS MQTT topic {uplink_topic}...")
+        self.tts_mqtt_client.subscribe_to_topic(
+            topic=uplink_topic, callback=self._tts_subscribe_callback
+        )
+        log.debug(f"Subscribed to E2L MQTT topic {uplink_topic}")
+
+        # SUBSCRIBE TO JOIN MESSAGE TOPIC
+        join_topic = os.getenv("TTS_MQTT_OTAA_TOPIC")
+        log.debug(f"Subscribing to TTS MQTT topic {join_topic}...")
+        self.tts_mqtt_client.subscribe_to_topic(
+            topic=join_topic, callback=self._tts_subscribe_callback
+        )
+        log.debug(f"Subscribed to TTS MQTT topic {join_topic}")
+
+    """
+        @brief  This function wait for messages from the TTS MQTT broker.
+        @return None.
+        @note   This function is blocking and should never return.
+    """
+
+    def _tts_mqtt_client_wait_for_message(self):
+        log.info("Waiting for messages from TTS MQTT broker...")
+        self.tts_mqtt_client.wait_for_message()
+
+    def _e2l_subscribe_callback(self, client, userdata, message):
+        """
+        {
+            'devaddr': '0036D012',
+            'aggregated_data': {'avg_rssi': -33.0, 'avg_snr': 9.2},
+            'fcnts': [11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27],
+            'timestamps': [1714138009, 1714138010, 1714138010, 1714138011, 1714138011, 1714138011, 1714138012, 1714138013, 1714138013, 1714138013, 1714138014, 1714138014, 1714138014, 1714138014, 1714138014, 1714138015, 1714138015],
+            'timestamp_pub': 1714138021072
+        }
+
+        def handle_edge_data(
+            self,
+            gw_id,
+            dev_eui,
+            dev_addr,
+            aggregated_data,
+            fcnts,
+            dev_addrs,
+            timetag,
+            gw_log_message=None,
+        ):
+        """
+        payload = json.loads(message.payload)
+        topic = message.topic
+        gw_id = topic.split("/")[0]
+        dev_addr = payload.get("devaddr")
+        dev_addrs = payload.get("devaddrs")
+        if dev_addrs is None or len(dev_addrs) == 0:
+            for dev_eui_it, dev_info in self.active_directory["e2eds"].items():
+                if dev_info["dev_addr"] == dev_addr:
+                    dev_eui = dev_eui_it
+                    break
+        else:
+            dev_eui = None
+
+        self.handle_edge_data(
+            gw_id=gw_id,
+            dev_eui=dev_eui,
+            dev_addr=dev_addr,
+            aggregated_data=payload.get("aggregated_data"),
+            fcnts=payload.get("fcnts"),
+            timetag=payload.get("timestamp_pub"),
+            dev_addrs=dev_addrs,
+            timestamps=payload.get("timestamps", []),
+            gw_log_message=None,
+        )
+
+    """
+        @brief  This function init the e2l mqtt client object.
+        @return None.
+    """
+
+    def _init_e2l_mqtt_client(self):
+        # SUBSCRIBE TO AGGREGATE MESSAGE TOPIC
+        aggr_topic = os.getenv("E2L_MQTT_AGGR_TOPIC")
+        log.debug(f"Subscribing to E2L MQTT topic {aggr_topic}...")
+        self.e2l_mqtt_client.subscribe_to_topic(
+            topic=aggr_topic, callback=self._e2l_subscribe_callback
+        )
+        log.debug(f"Subscribed to E2L MQTT topic {aggr_topic}")
+
+    """
+        @brief  This function wait for messages from the E2L MQTT broker.
+        @return None.
+        @note   This function is blocking and should never return.
+    """
+
+    def _e2l_mqtt_client_wait_for_message(self):
+        log.info("Waiting for messages from E2L MQTT broker...")
+        self.e2l_mqtt_client.wait_for_message()
+
+    def mqtt_clients_init(self):
+        self._init_tts_mqtt_client()
+        self._init_e2l_mqtt_client()
+
+    def mqtt_clients_wait_for_message(self):
+        tts_thread = Thread(target=self._tts_mqtt_client_wait_for_message)
+        e2l_thread = Thread(target=self._e2l_mqtt_client_wait_for_message)
+        tts_thread.start()
+        e2l_thread.start()
+        tts_thread.join()
+        e2l_thread.join()

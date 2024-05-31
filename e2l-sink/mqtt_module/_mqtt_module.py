@@ -2,6 +2,7 @@ import paho.mqtt.client as mqtt
 import logging 
 
 
+log = logging.getLogger(__name__)
 
 class MQTTModule():
 
@@ -12,8 +13,7 @@ class MQTTModule():
         port = kwargs.get('port', None)
         client_id = kwargs.get('client_id', __name__)
         clean_session = kwargs.get('clean_session', True)
-        e2l_module = kwargs.get('e2l_module', None)
-        if username is None or password is None or host is None or port is None or e2l_module is None:
+        if username is None or password is None or host is None or port is None:
             raise Exception('Missing parameters')
         self.client = mqtt.Client(
             client_id =client_id,
@@ -22,8 +22,7 @@ class MQTTModule():
         )
         self.client.username_pw_set(username, password)
         self.client.connect(host, port, 60)
-        # e2l Module
-        self.e2l_module = e2l_module
+        
 
     def _callback(self, client, userdata, message):
         self.callback(self, userdata, message)

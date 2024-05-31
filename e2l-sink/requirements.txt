@@ -6,7 +6,7 @@
 #
 dnspython==2.4.2
     # via pymongo
-grpcio==1.56.2
+grpcio==1.63.0
     # via -r requirements.in
 paho-mqtt==1.6.1
     # via -r requirements.in
