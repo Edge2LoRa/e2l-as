@@ -142,6 +142,7 @@ class E2LoRaModule:
             host=os.getenv("E2L_MQTT_HOST"),
             port=int(os.getenv("E2L_MQTT_PORT")),
         )
+        self.input_process_topic = os.getenv("E2L_MQTT_AGGR_INPUT_TOPIC")
         log.debug("Connected to E2L MQTT broker")
         # Aggregation Utils
         self.ed_1_gw_selection = None
@@ -1027,7 +1028,14 @@ class E2LoRaModule:
     """
 
     def handle_legacy_data(
-        self, dev_id, dev_eui, dev_addr, fcnt, rx_timestamp, frame_payload_base64
+        self,
+        dev_id,
+        dev_eui,
+        dev_addr,
+        fcnt,
+        rx_timestamp,
+        frame_payload_base64,
+        payload,
     ):
         # decode frame_payload_base64
         frame_payload = base64.b64decode(frame_payload_base64).decode("utf-8")
@@ -1039,6 +1047,47 @@ class E2LoRaModule:
         )
         # self.statistics["ns"]["rx"] = self.statistics["ns"].get("rx", 0) + 1
         self.statistics["ns"]["tx"] = self.statistics["ns"].get("tx", 0) + 1
+
+        up_msg = payload.get("uplink_message")
+        uplink_message = payload.get("uplink_message")
+        fcnt = uplink_message.get("f_cnt")
+        rx_metadata = uplink_message.get("rx_metadata")[0]
+        gw_info = rx_metadata.get("gateway_ids", {})
+        gtw_id = gw_info.get("eui", "")
+        rx_timestamp = rx_metadata.get("timestamp")
+        rx_time = rx_timestamp.get("time", "")
+        gtw_rssi = rx_metadata.get("rssi", 0)
+        gtw_snr = rx_metadata.get("snr", 0.0)
+        gtw_channel = rx_metadata.get("channel_index", 0)
+
+        settings = uplink_message.get("settings", {})
+        frequency_str = settings.get("frequency", "0.0")
+        # convert frequency_str from Hz to MHz
+        frequency = float(frequency_str) / 1_000_000.0
+
+        data_rate = settings.get("data_rate", {}).get("lora", {})
+        bandwidth = data_rate.get("bandwidth", 0.0) / 1_000.0
+        spreading_factor = data_rate.get("spreading_factor", 0)
+        data_rate_str = f"SF{spreading_factor}BW{int(bandwidth)}"
+
+        coding_rate = settings.get("coding_rate", "")
+        mqtt_payload = {
+            "dev_eui": dev_eui,
+            "dev_addr": dev_addr,
+            "fcnt": fcnt,
+            "timestamp": rx_time,
+            "frequency": frequency,
+            "data_rate": data_rate_str,
+            "coding_rate": coding_rate,
+            "gtw_id": gtw_id,
+            "gtw_channel": gtw_channel,
+            "gtw_rssi": gtw_rssi,
+            "gtw_snr": gtw_snr,
+            "payload": frame_payload_base64,
+        }
+        self.e2l_mqtt_client.publish_to_topic(
+            topic=self.input_process_topic, message=json.dumps(mqtt_payload)
+        )
 
         timestamp = rx_timestamp
         if frame_payload.isnumeric():
@@ -1390,7 +1439,7 @@ class E2LoRaModule:
         if up_port == DEFAULT_APP_PORT:
             log.debug("Received Legacy Frame")
             return self.handle_legacy_data(
-                dev_id, dev_eui, dev_addr, fcnt, rx_timestamp, frame_payload
+                dev_id, dev_eui, dev_addr, fcnt, rx_timestamp, frame_payload, payload
             )
         elif up_port == DEFAULT_E2L_JOIN_PORT:
             log.debug("Received Edge Join Frame")
@@ -1499,7 +1548,7 @@ class E2LoRaModule:
 
     def _init_e2l_mqtt_client(self):
         # SUBSCRIBE TO AGGREGATE MESSAGE TOPIC
-        aggr_topic = os.getenv("E2L_MQTT_AGGR_TOPIC")
+        aggr_topic = os.getenv("E2L_MQTT_AGGR_OUTPUT_TOPIC")
         log.debug(f"Subscribing to E2L MQTT topic {aggr_topic}...")
         self.e2l_mqtt_client.subscribe_to_topic(
             topic=aggr_topic, callback=self._e2l_subscribe_callback
