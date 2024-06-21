@@ -288,6 +288,7 @@ class E2LoRaModule:
         frame_type,
         fcnt,
         timetag,
+        aggr_start_time,
         dev_addrs=[],
         aggregated_data={},
         timestamps=[],
@@ -308,6 +309,7 @@ class E2LoRaModule:
             "timestamps": timestamps,
             "aggregated_data": aggregated_data,
             "timetag_gw": timetag,
+            "aggr_start_time": aggr_start_time,
             "timetag_dm": timetag_dm,
         }
         if gw_id is not None:
@@ -1120,6 +1122,7 @@ class E2LoRaModule:
         aggregated_data,
         fcnts,
         timetag,
+        aggr_start_time,
         dev_addrs=[],
         timestamps=[],
         gw_log_message=None,
@@ -1144,6 +1147,7 @@ class E2LoRaModule:
             aggregated_data=aggregated_data,
             timestamps=timestamps,
             timetag=timetag,
+            aggr_start_time=aggr_start_time,
         )
         self.statistics["dm"]["rx_e2l_frames"] = (
             self.statistics["dm"].get("rx_e2l_frames", 0) + 1
@@ -1416,6 +1420,7 @@ class E2LoRaModule:
     """
 
     def _tts_subscribe_callback(self, client, userdata, message):
+        log.debug("######### Received message from TTS")
         topic = message.topic
         payload_str = message.payload.decode("utf-8")
         payload = json.loads(payload_str)
@@ -1536,6 +1541,7 @@ class E2LoRaModule:
             aggregated_data=payload.get("aggregated_data"),
             fcnts=payload.get("fcnts"),
             timetag=payload.get("timestamp_pub"),
+            aggr_start_time=payload.get("aggr_start_time"),
             dev_addrs=dev_addrs,
             timestamps=payload.get("timestamps", []),
             gw_log_message=None,

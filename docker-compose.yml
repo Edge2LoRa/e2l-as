@@ -15,7 +15,7 @@ services:
 
   e2l_sink:
     hostname: e2l-sink1
-    image: ghcr.io/edge2lora/e2l-sink:cloud-processing-1
+    image: ghcr.io/edge2lora/e2l-sink:cp-1
     depends_on:
       - e2l_as_broker
     volumes:
@@ -29,7 +29,8 @@ services:
 
   e2l_process:
     hostname: e2l-process-sink
-    image: ghcr.io/edge2lora/e2l-process:time-window-handover-test1
+    image: ghcr.io/edge2lora/e2l-process:time-window-cp
+    # image: ghcr.io/edge2lora/e2l-process:hampel-cp-1
     depends_on:
       - e2l_as_broker
     env_file:
