@@ -149,8 +149,18 @@ class E2LoRaModule:
         self.ed_2_gw_selection = None
         self.ed_3_gw_selection = None
         # Load Device JSON
-        split_devices = os.getenv("SPLIT_DEVICES", "1")
-        self.split_devices = True if split_devices == "1" else False
+        split_devices = os.getenv("SPLIT_DEVICES")
+        if split_devices is None or not split_devices.isnumeric():
+            raise ("SPLIT_DEVICES SHOULD BE AN INTEGER")
+        self.split_devices = int(split_devices)
+        if self.split_devices < 0:
+            self.split_devices = 0
+        gw_number = os.getenv("GW_NUMBER")
+        if gw_number is None or not gw_number.isnumeric():
+            raise ("GW_NUMBER SHOULD BE AN INTEGER")
+        self.gw_number = int(gw_number)
+        if self.gw_number < 0:
+            self.gw_number = 0
         self._load_device_json()
         # GW shit mode
         gw_shut_enabled = os.getenv("GW_SHUT", "0")
@@ -782,8 +792,8 @@ class E2LoRaModule:
             assigned_gw = dev_info.get("e2gw")
             if assigned_gw is None:
                 gw_index = 0
-                if self.split_devices:
-                    gw_index = dev_index % 2
+                if self.split_devices > 0 and self.gw_number > 0:
+                    gw_index = (dev_index / self.split_devices) % self.gw_number
                 if gw_index >= len(self.e2gw_ids):
                     # assigned_gw = "test"
                     continue
