@@ -281,49 +281,15 @@ class E2LoRaModule:
 
     """
         @brief this function push a log document in the MongoDB collection
-        @param module_id: module id
-        @param dev_addr: device address
-        @param log_message: log message
-        @param frame_type: frame type
-        @param fcnt: frame counter
-        @param timetag: timetag
+        @param log_obj: dict to be pushed into the DB
         @return 0 if success, -1 if error
     """
 
-    def _push_log_to_db(
-        self,
-        module_id,
-        dev_addr,
-        log_message,
-        frame_type,
-        fcnt,
-        timetag,
-        aggr_start_time,
-        dev_addrs=[],
-        aggregated_data={},
-        timestamps=[],
-        gw_id=None,
-    ):
+    def _push_log_to_db(self, log_obj):
         if self.collection is None:
             return -1
         timetag_dm = int(round(time.time() * 1000))
-        log_obj = {
-            "_id": self._get_now_isostring(),
-            "type": LOG_V2_DOC_TYPE,
-            "module_id": module_id,
-            "dev_addr": dev_addr,
-            "log": log_message,
-            "frame_type": frame_type,
-            "fcnt": fcnt,
-            "dev_addrs": dev_addrs,
-            "timestamps": timestamps,
-            "aggregated_data": aggregated_data,
-            "timetag_gw": timetag,
-            "aggr_start_time": aggr_start_time,
-            "timetag_dm": timetag_dm,
-        }
-        if gw_id is not None:
-            log_obj["gw_id"] = gw_id
+        log_obj["timetag_dm"] = timetag_dm
         self.collection.insert_one(log_obj)
         return 0
 
@@ -1104,13 +1070,15 @@ class E2LoRaModule:
         timestamp = rx_timestamp
         if frame_payload.isnumeric():
             timestamp = int(frame_payload)
+        log_obj = {
+            "module_id": "DM",
+            "log_message": f"Legacy frame from {dev_addr}",
+            "frame_type": LEGACY_FRAME,
+            "fcnt": fcnt,
+            "timetag": timestamp,
+        }
         self._push_log_to_db(
-            module_id="DM",
-            dev_addr=dev_addr,
-            log_message=f"Legacy frame from {dev_addr}",
-            frame_type=LEGACY_FRAME,
-            fcnt=fcnt,
-            timetag=timestamp,
+            log_obj=log_obj,
         )
         return 0
 
@@ -1124,41 +1092,36 @@ class E2LoRaModule:
         @return 0 is success, < 0 if failure.
     """
 
+    # def handle_edge_data(
+    #     self,
+    #     gw_id,
+    #     dev_eui,
+    #     dev_addr,
+    #     aggregated_data,
+    #     fcnts,
+    #     timetag,
+    #     aggr_start_time,
+    #     dev_addrs=[],
+    #     timestamps=[],
+    #     gw_log_message=None,
+    # ):
     def handle_edge_data(
         self,
-        gw_id,
-        dev_eui,
-        dev_addr,
-        aggregated_data,
-        fcnts,
-        timetag,
-        aggr_start_time,
-        dev_addrs=[],
-        timestamps=[],
+        payload,
         gw_log_message=None,
     ):
+        dev_addr = payload.get("dev_addr")
+        gw_id = payload.get("gw_id")
+        dev_eui = payload.get("dev_eui")
+        aggregated_data = payload.get("aggregated_data")
         log.debug(
             f"Received Edge Frame from E2ED. Dev Addr: {dev_addr}. E2GW: {gw_id}."
         )
-        log.debug(f"Aggregated Data: {aggregated_data}")
-        log.debug(f"FCNTs: {fcnts}")
-        log.debug(f"Dev Addrs: {dev_addrs}")
-        log.debug(f"Timestamps: {timestamps}")
-        log.debug(f"Timetag: {timetag}")
 
-        self._push_log_to_db(
-            module_id="DM",
-            dev_addr=dev_addr,
-            gw_id=gw_id,
-            log_message=f"Received Aggregate Frame from {dev_addr}",
-            frame_type=EDGE_FRAME_AGGREGATE,
-            fcnt=fcnts,
-            dev_addrs=dev_addrs,
-            aggregated_data=aggregated_data,
-            timestamps=timestamps,
-            timetag=timetag,
-            aggr_start_time=aggr_start_time,
-        )
+        payload["module_id"] = "DM"
+        payload["log_message"] = f"Received Aggregate Frame from {dev_addr}"
+        payload["frame_type"] = EDGE_FRAME_AGGREGATE
+        self._push_log_to_db(log_obj=payload)
         self.statistics["dm"]["rx_e2l_frames"] = (
             self.statistics["dm"].get("rx_e2l_frames", 0) + 1
         )
@@ -1242,83 +1205,14 @@ class E2LoRaModule:
         if log_type is None:
             return
 
-        # dev_eui = None
-        # for ed in self.ed_ids:
-        #     if self.statistics[ed]["dev_addr"] == dev_addr:
-        #         dev_eui = ed
-        #         break
-
-        if frame_type == EDGE_FRAME:
-            # self.statistics["gateways"][gw_id]["rx"] = (
-            #     self.statistics["gateways"][gw_id].get("rx", 0) + 1
-            # )
-            # if dev_eui is not None:
-            #     self.statistics["devices"][dev_eui]["edge_frames"] = (
-            #         self.statistics["devices"][dev_eui].get("edge_frames", 0) + 1
-            #     )
-            self._push_log_to_db(
-                module_id=gw_id,
-                dev_addr=dev_addr,
-                log_message=log_message,
-                frame_type=frame_type,
-                fcnt=fcnt,
-                timetag=timetag,
-            )
-        elif frame_type == EDGE_FRAME_NOT_PROCESSING:
-            # self.statistics["gateways"][gw_id]["rx"] = (
-            #     self.statistics["gateways"][gw_id].get("rx", 0) + 1
-            # )
-            self._push_log_to_db(
-                module_id=gw_id,
-                dev_addr=dev_addr,
-                log_message=log_message,
-                frame_type=frame_type,
-                fcnt=fcnt,
-                timetag=timetag,
-            )
-        elif frame_type == LEGACY_FRAME:
-            # self.statistics["gateways"][gw_id]["rx"] = (
-            #     self.statistics["gateways"][gw_id].get("rx", 0) + 1
-            # )
-            # self.statistics["gateways"][gw_id]["tx"] = (
-            #     self.statistics["gateways"][gw_id].get("tx", 0) + 1
-            # )
-            # if dev_eui is not None:
-            #     self.statistics["devices"][dev_eui]["legacy_frames"] = (
-            #         self.statistics["devices"][dev_eui].get("legacy_frames", 0) + 1
-            #     )
-            self._push_log_to_db(
-                module_id=gw_id,
-                dev_addr=dev_addr,
-                log_message=log_message,
-                frame_type=frame_type,
-                fcnt=fcnt,
-                timetag=timetag,
-            )
-            # STATS FOR NS
-            # self.statistics["ns"]["rx"] = self.statistics["ns"].get("rx", 0) + 1
-            # # Check duplicate and update legacy stats
-            # with self.legacy_not_duplicates_lock:
-            #     last_fcnt = self.legacy_not_duplicates.get(dev_addr, -1)
-            #     if fcnt > last_fcnt:
-            #         self.statistics["dm"]["rx_legacy_frames"] = (
-            #             self.statistics["dm"].get("rx_legacy_frames", 0) + 1
-            #         )
-            #         self.legacy_not_duplicates[dev_addr] = last_fcnt
-            #         self.statistics["ns"]["tx"] = self.statistics["ns"].get("tx", 0) + 1
-            #     else:
-            #         self.legacy_dropped = self.legacy_dropped + 1
-        else:
-            log.warning("Unknown frame type")
-
-        # if (
-        #     index == 1
-        #     and self.gw_shut_enabled
-        #     and not self.gw_shut_done
-        #     and self.statistics["gateways"][gw_id]["rx"] >= self.gw_shut_packet_limit
-        # ):
-        #     shut_thread = Thread(target=self._shut_gw)
-        #     shut_thread.start()
+        log_obj = {
+            "module_id": gw_id,
+            "log_message": log_message,
+            "frame_type": frame_type,
+            "fcnt": fcnt,
+            "timetag": timetag,
+        }
+        self._push_log_to_db(log_obj=log_obj)
 
         return 0
 
@@ -1544,16 +1438,11 @@ class E2LoRaModule:
         else:
             dev_eui = None
 
+        payload["gw_id"] = gw_id
+        payload["dev_eui"] = dev_eui
+
         self.handle_edge_data(
-            gw_id=gw_id,
-            dev_eui=dev_eui,
-            dev_addr=dev_addr,
-            aggregated_data=payload.get("aggregated_data"),
-            fcnts=payload.get("fcnts"),
-            timetag=payload.get("timestamp_pub"),
-            aggr_start_time=payload.get("aggr_start_time"),
-            dev_addrs=dev_addrs,
-            timestamps=payload.get("timestamps", []),
+            payload=payload,
             gw_log_message=None,
         )
 
