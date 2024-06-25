@@ -143,6 +143,7 @@ class E2LoRaModule:
             port=int(os.getenv("E2L_MQTT_PORT")),
         )
         self.input_process_topic = os.getenv("E2L_MQTT_AGGR_INPUT_TOPIC")
+        self.control_base_topic = os.getenv("E2L_MQTT_CONTROL_BASE_TOPIC")
         log.debug("Connected to E2L MQTT broker")
         # Aggregation Utils
         self.ed_1_gw_selection = None
@@ -740,7 +741,6 @@ class E2LoRaModule:
             self._send_log(type=log_type, message=log_message)
 
         # Check the preloaded devices
-        device_list = []
         for dev_index in range(len(self.e2ed_ids)):
             # Create Device info
             dev_eui = self.e2ed_ids[dev_index]
@@ -751,8 +751,6 @@ class E2LoRaModule:
             edge_s_int_key = dev_info.get("edgeSIntKey")
             if edge_s_enc_key is None or edge_s_int_key is None:
                 continue
-            edge_s_enc_key_bytes = bytes.fromhex(edge_s_enc_key)
-            edge_s_int_key_bytes = bytes.fromhex(edge_s_int_key)
 
             # Check if GW is already assigned.
             assigned_gw = dev_info.get("e2gw")
@@ -761,37 +759,33 @@ class E2LoRaModule:
                 if self.split_devices > 0 and self.gw_number > 0:
                     gw_index = (dev_index / self.split_devices) % self.gw_number
                 if gw_index >= len(self.e2gw_ids):
-                    # assigned_gw = "test"
                     continue
                 assigned_gw = self.e2gw_ids[gw_index]
                 dev_info["e2gw"] = assigned_gw
-            if assigned_gw != gw_rpc_endpoint_address:
-                device_list.append(
-                    Device(
-                        dev_eui=dev_eui,
-                        dev_addr=self.active_directory["e2eds"][dev_eui]["dev_addr"],
-                        edge_s_enc_key=b"",
-                        edge_s_int_key=b"",
-                        assigned_gw=assigned_gw,
+            # SEND DEVICE INFO
+            unassigned_device_info = {
+                "dev_eui": dev_eui,
+                "dev_addr": self.active_directory["e2eds"][dev_eui]["dev_addr"],
+                "assigned_gw": assigned_gw,
+            }
+            assigned_device_info = {
+                "dev_eui": dev_eui,
+                "dev_addr": self.active_directory["e2eds"][dev_eui]["dev_addr"],
+                "edge_s_enc_key": edge_s_enc_key,
+                "edge_s_int_key": edge_s_int_key,
+            }
+            for gw_id in self.active_directory["e2gws"].keys():
+                log.debug(f"Sending {dev_eui} info to {gw_id}")
+                if gw_id == assigned_gw:
+                    self.e2l_mqtt_client.publish_to_topic(
+                        topic=f"{gw_id}/{self.control_base_topic}/add_assigned_device",
+                        message=json.dumps(assigned_device_info),
                     )
-                )
-            else:
-                device_list.append(
-                    Device(
-                        dev_eui=dev_eui,
-                        dev_addr=self.active_directory["e2eds"][dev_eui]["dev_addr"],
-                        edge_s_enc_key=edge_s_enc_key_bytes,
-                        edge_s_int_key=edge_s_int_key_bytes,
-                        assigned_gw=assigned_gw,
+                else:
+                    self.e2l_mqtt_client.publish_to_topic(
+                        topic=f"{gw_id}/{self.control_base_topic}/add_unassigned_device",
+                        message=json.dumps(unassigned_device_info),
                     )
-                )
-
-        for gw_id, gw_info in self.active_directory["e2gws"].items():
-            gw_stub = gw_info.get("e2gw_stub")
-            if gw_stub is None:
-                continue
-            log.debug(f"Sending {len(device_list)} to {gw_id}")
-            gw_stub.add_devices(E2LDevicesInfoComplete(device_list=device_list))
 
         return 0
 
