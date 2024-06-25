@@ -757,7 +757,7 @@ class E2LoRaModule:
             if assigned_gw is None:
                 gw_index = 0
                 if self.split_devices > 0 and self.gw_number > 0:
-                    gw_index = (dev_index / self.split_devices) % self.gw_number
+                    gw_index = int((dev_index / self.split_devices) % self.gw_number)
                 if gw_index >= len(self.e2gw_ids):
                     continue
                 assigned_gw = self.e2gw_ids[gw_index]
