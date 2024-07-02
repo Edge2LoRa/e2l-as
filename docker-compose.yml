@@ -15,7 +15,7 @@ services:
 
   e2l_sink:
     hostname: e2l-sink1
-    image: ghcr.io/edge2lora/e2l-sink:load-balancing-2
+    image: ghcr.io/edge2lora/e2l-sink:load-balancing-4
     depends_on:
       - e2l_as_broker
     volumes:
@@ -30,14 +30,13 @@ services:
   e2l_process:
     hostname: e2l-process-sink
     # image: ghcr.io/edge2lora/e2l-process:time-window-cp
-    image: ghcr.io/edge2lora/e2l-process:hampel-load-balancing-1
+    image: ghcr.io/edge2lora/e2l-process:hampel-load-balancing-10
     depends_on:
       - e2l_as_broker
     env_file:
       - ".env.process"
     networks:
       - e2l_network
-
 networks:
   e2l_network:
     name: e2l_network

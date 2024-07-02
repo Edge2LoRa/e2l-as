@@ -1435,6 +1435,8 @@ class E2LoRaModule:
         payload["gw_id"] = gw_id
         payload["dev_eui"] = dev_eui
 
+        log.debug(f"Received edge data from {gw_id} with dev_addr {dev_addr}")
+
         self.handle_edge_data(
             payload=payload,
             gw_log_message=None,
