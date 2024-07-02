@@ -290,7 +290,10 @@ class E2LoRaModule:
         if self.collection is None:
             return -1
         timetag_dm = int(round(time.time() * 1000))
+        log_obj["_id"] = self._get_now_isostring()
         log_obj["timetag_dm"] = timetag_dm
+        log_obj["type"] = LOG_V2_DOC_TYPE
+        log.debug(f"PUSHING AGGREGATE INFO IN DB: {log_obj}")
         self.collection.insert_one(log_obj)
         return 0
 
@@ -1115,6 +1118,7 @@ class E2LoRaModule:
         payload["module_id"] = "DM"
         payload["log_message"] = f"Received Aggregate Frame from {dev_addr}"
         payload["frame_type"] = EDGE_FRAME_AGGREGATE
+        payload["type"] = LOG_V2_DOC_TYPE
         self._push_log_to_db(log_obj=payload)
         self.statistics["dm"]["rx_e2l_frames"] = (
             self.statistics["dm"].get("rx_e2l_frames", 0) + 1
@@ -1436,6 +1440,7 @@ class E2LoRaModule:
         payload["dev_eui"] = dev_eui
 
         log.debug(f"Received edge data from {gw_id} with dev_addr {dev_addr}")
+        log.debug(f"PAYLOAD: {payload}")
 
         self.handle_edge_data(
             payload=payload,
