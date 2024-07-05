@@ -15,7 +15,7 @@ services:
 
   e2l_sink:
     hostname: e2l-sink1
-    image: ghcr.io/edge2lora/e2l-sink:load-balancing-5
+    image: ghcr.io/edge2lora/e2l-sink:load-balancing-6
     depends_on:
       - e2l_as_broker
     volumes:
