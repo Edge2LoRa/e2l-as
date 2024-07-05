@@ -163,6 +163,8 @@ class E2LoRaModule:
         if self.gw_number < 0:
             self.gw_number = 0
         self._load_device_json()
+        # MOBILITY
+        self.mobility = os.getenv("ENABLE_MOBILITY", "0") == "1"
         # GW shit mode
         gw_shut_enabled = os.getenv("GW_SHUT", "0")
         self.gw_shut_enabled = True if gw_shut_enabled == "1" else False
@@ -1079,6 +1081,90 @@ class E2LoRaModule:
         )
         return 0
 
+    def _handle_mobility(self, payload):
+        rx_process_gws = payload.get("rx_process_gw")
+        dev_addrs = payload.get("devaddrs")
+
+        devices_info = {}
+        for index in range(len(dev_addrs)):
+            dev_addr = dev_addrs[index]
+            if devices_info.get(dev_addr) is None:
+                devices_info[dev_addr] = {"total_packets": 0, "rx_gws": {}}
+            device_info = devices_info[dev_addr]
+            rx_process_gw = rx_process_gws[index]
+            rx_gw = rx_process_gw[0]
+            if device_info["rx_gws"].get(rx_gw) is None:
+                device_info["rx_gws"][rx_gw] = 0
+            device_info["rx_gws"][rx_gw] += 1
+            device_info["total_packets"] += 1
+
+        for dev_addr in devices_info.keys():
+            # Retrieve Device OBJ
+            # dev_obj = {
+            #     "dev_id": dev_id,
+            #     "dev_eui": dev_eui,
+            #     "dev_addr": dev_addr,
+            #     "e2gw": None,
+            #     "edgeSIntKey": edgeSIntKey,
+            #     "edgeSEncKey": edgeSEncKey,
+            # }
+            # self.active_directory["e2eds"][dev_eui] = dev_obj
+            dev_obj = None
+            for dev_obj_iter in self.active_directory["e2eds"].values():
+                if dev_obj_iter.get("dev_addr") == dev_addr:
+                    dev_obj = dev_obj_iter
+                    break
+            if dev_obj is None:
+                continue
+
+            # CHECK MOST USED GW
+            device_info = devices_info[dev_addr]
+            total_packets = device_info["total_packets"]
+            rx_gws = device_info["rx_gws"]
+            new_gw = None
+            for gw in rx_gws.keys():
+                if rx_gws[gw] / total_packets >= (1.0 / float(self.gw_number)):
+                    new_gw = gw
+                    break
+
+            if dev_obj["e2gw"] == new_gw:
+                continue
+
+            # UPDATE ACTIVE DIRECTORY
+            dev_obj["e2gw"] = new_gw
+
+            dev_eui = dev_obj.get("dev_eui")
+            dev_addr = dev_obj.get("dev_addr")
+            assigned_gw = new_gw
+            edge_s_int_key = dev_obj.get("edgeSIntKey")
+            edge_s_enc_key = dev_obj.get("edgeSEncKey")
+            # SEND DEVICE INFO
+            unassigned_device_info = {
+                "dev_eui": dev_eui,
+                "dev_addr": dev_addr,
+                "assigned_gw": assigned_gw,
+            }
+            assigned_device_info = {
+                "dev_eui": dev_eui,
+                "dev_addr": dev_addr,
+                "edge_s_enc_key": edge_s_enc_key,
+                "edge_s_int_key": edge_s_int_key,
+            }
+            for gw_id in self.active_directory["e2gws"].keys():
+                log.debug(f"Sending {dev_eui} info to {gw_id}")
+                if gw_id == assigned_gw:
+                    self.e2l_mqtt_client.publish_to_topic(
+                        topic=f"{gw_id}/{self.control_base_topic}/add_assigned_device",
+                        message=json.dumps(assigned_device_info),
+                    )
+                else:
+                    self.e2l_mqtt_client.publish_to_topic(
+                        topic=f"{gw_id}/{self.control_base_topic}/add_unassigned_device",
+                        message=json.dumps(unassigned_device_info),
+                    )
+
+        return 0
+
     """
         @brief  This function handle new edge frame received by an ED, passing by the E2ED route.
         @param gw_id: The GW ID.
@@ -1089,19 +1175,6 @@ class E2LoRaModule:
         @return 0 is success, < 0 if failure.
     """
 
-    # def handle_edge_data(
-    #     self,
-    #     gw_id,
-    #     dev_eui,
-    #     dev_addr,
-    #     aggregated_data,
-    #     fcnts,
-    #     timetag,
-    #     aggr_start_time,
-    #     dev_addrs=[],
-    #     timestamps=[],
-    #     gw_log_message=None,
-    # ):
     def handle_edge_data(
         self,
         payload,
@@ -1115,11 +1188,17 @@ class E2LoRaModule:
             f"Received Edge Frame from E2ED. Dev Addr: {dev_addr}. E2GW: {gw_id}."
         )
 
+        # PUSH LOG
         payload["module_id"] = "DM"
         payload["log_message"] = f"Received Aggregate Frame from {dev_addr}"
         payload["frame_type"] = EDGE_FRAME_AGGREGATE
         payload["type"] = LOG_V2_DOC_TYPE
         self._push_log_to_db(log_obj=payload)
+
+        # CHECK MOBILITY
+        if self.mobility:
+            self._handle_mobility(payload=payload)
+
         self.statistics["dm"]["rx_e2l_frames"] = (
             self.statistics["dm"].get("rx_e2l_frames", 0) + 1
         )
