@@ -1209,7 +1209,7 @@ class E2LoRaModule:
         )
 
         # SEND LOG
-        if self.dashboard_rpc_stub is not None:
+        if self.dashboard_rpc_stub is not None and dev_eui is not None:
             if dev_eui in self.e2ed_ids and self.e2ed_ids.index(dev_eui) == 0:
                 self.statistics["aggregation_result"] = aggregated_data
             self._send_log(
@@ -1505,20 +1505,20 @@ class E2LoRaModule:
         payload = json.loads(message.payload)
         topic = message.topic
         gw_id = topic.split("/")[0]
-        dev_addr = payload.get("devaddr")
-        dev_addrs = payload.get("devaddrs")
-        if dev_addrs is None or len(dev_addrs) == 0:
-            for dev_eui_it, dev_info in self.active_directory["e2eds"].items():
-                if dev_info["dev_addr"] == dev_addr:
-                    dev_eui = dev_eui_it
-                    break
-        else:
-            dev_eui = None
+        # dev_addr = payload.get("devaddr")
+        # dev_addrs = payload.get("devaddrs")
+        # if dev_addrs is None or len(dev_addrs) == 0:
+        #     for dev_eui_it, dev_info in self.active_directory["e2eds"].items():
+        #         if dev_info["dev_addr"] == dev_addr:
+        #             dev_eui = dev_eui_it
+        #             break
+        # else:
+        #      dev_eui = None
 
         payload["gw_id"] = gw_id
-        payload["dev_eui"] = dev_eui
+        # payload["dev_eui"] = dev_eui
 
-        log.debug(f"Received edge data from {gw_id} with dev_addr {dev_addr}")
+        log.debug(f"Received edge data from {gw_id}")# with dev_addr {dev_addr}")
         log.debug(f"PAYLOAD: {payload}")
 
         self.handle_edge_data(
