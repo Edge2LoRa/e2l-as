@@ -3,41 +3,53 @@ version: "3"
 services:
   e2l_as_broker:
     hostname: e2l-as-broker
-    image: e2l-as-broker:v1.0.0
+    image: emqx/emqx:5.8.0
+    container_name: e2l-as-broker
+    environment:
+      - "EMQX_NODE_NAME=emqx@e2l-as-broker.e2l_network"
+    # healthcheck:
+    #   test: ["CMD", "/opt/emqx/bin/emqx", "ctl", "status"]
+    #   interval: 5s
+    #   timeout: 25s
+    #   retries: 5
+    networks:
+      - e2l_network
     ports:
-      - "10884:1883"
+      - 10883:1883
+      - 8083:8083
+      - 8084:8084
+      - 18883:8883
+      - 18083:18083
     volumes:
-      - ./e2l-as-broker/config/mosquitto.conf:/mosquitto/config/mosquitto.conf
-      - ./e2l-as-broker/data/:/mosquitto/data/
-      - ./e2l-as-broker/log/:/mosquitto/log/
-    networks:
-      - e2l_network
+      - ./e2l-as-broker/data/:/opt/emqx/data
+      - ./e2l-as-broker/log/:/opt/emqx/log
 
-  e2l_sink:
-    hostname: e2l-sink1
-    image: ghcr.io/edge2lora/e2l-sink:load-balancing-6
-    depends_on:
-      - e2l_as_broker
-    volumes:
-      - ./e2l-sink/device_files/:/home/e2l/e2l-sink/device_files/
-    env_file:
-      - ".env.sink"
-    ports:
-      - "50051:50051"
-    networks:
-      - e2l_network
+  # e2l_sink:
+  #   hostname: e2l-sink1
+  #   image: ghcr.io/edge2lora/e2l-sink:load-balancing-6
+  #   depends_on:
+  #     - e2l_as_broker
+  #   volumes:
+  #     - ./e2l-sink/device_files/:/home/e2l/e2l-sink/device_files/
+  #   env_file:
+  #     - ".env.sink"
+  #   ports:
+  #     - "50051:50051"
+  #   networks:
+  #     - e2l_network
 
-  e2l_process:
-    hostname: e2l-process-sink
-    # image: ghcr.io/edge2lora/e2l-process:time-window-cp
-    image: ghcr.io/edge2lora/e2l-process:hampel-load-balancing-10
-    depends_on:
-      - e2l_as_broker
-    env_file:
-      - ".env.process"
-    networks:
-      - e2l_network
+  #e2l_process:
+  #  hostname: e2l-process-sink
+  #  # image: ghcr.io/edge2lora/e2l-process:time-window-cp
+  #  image: ghcr.io/edge2lora/e2l-process:hampel-load-balancing-10
+  #  depends_on:
+  #    - e2l_as_broker
+  #  env_file:
+  #    - ".env.process"
+  #  networks:
+  #    - e2l_network
 networks:
   e2l_network:
-    name: e2l_network
-    driver: overlay
+    # name: e2l_network
+    # driver: overlay
+    driver: bridge
