@@ -783,12 +783,12 @@ class E2LoRaModule:
                 log.debug(f"Sending {dev_eui} info to {gw_id}")
                 if gw_id == assigned_gw:
                     self.e2l_mqtt_client.publish_to_topic(
-                        topic=f"{gw_id}/{self.control_base_topic}/add_assigned_device",
+                        topic=f"{gw_id}/{self.control_base_topic}/down/add_assigned_device",
                         message=json.dumps(assigned_device_info),
                     )
                 else:
                     self.e2l_mqtt_client.publish_to_topic(
-                        topic=f"{gw_id}/{self.control_base_topic}/add_unassigned_device",
+                        topic=f"{gw_id}/{self.control_base_topic}/down/add_unassigned_device",
                         message=json.dumps(unassigned_device_info),
                     )
 
@@ -1154,12 +1154,12 @@ class E2LoRaModule:
                 log.debug(f"Sending {dev_eui} info to {gw_id}")
                 if gw_id == assigned_gw:
                     self.e2l_mqtt_client.publish_to_topic(
-                        topic=f"{gw_id}/{self.control_base_topic}/add_assigned_device",
+                        topic=f"{gw_id}/{self.control_base_topic}/down/add_assigned_device",
                         message=json.dumps(assigned_device_info),
                     )
                 else:
                     self.e2l_mqtt_client.publish_to_topic(
-                        topic=f"{gw_id}/{self.control_base_topic}/add_unassigned_device",
+                        topic=f"{gw_id}/{self.control_base_topic}/down/add_unassigned_device",
                         message=json.dumps(unassigned_device_info),
                     )
 
@@ -1518,13 +1518,36 @@ class E2LoRaModule:
         payload["gw_id"] = gw_id
         # payload["dev_eui"] = dev_eui
 
-        log.debug(f"Received edge data from {gw_id}")# with dev_addr {dev_addr}")
+        log.debug(f"Received edge data from {gw_id}")  # with dev_addr {dev_addr}")
         log.debug(f"PAYLOAD: {payload}")
 
         self.handle_edge_data(
             payload=payload,
             gw_log_message=None,
         )
+
+    def _e2l_subscribe_control_callback(self, client, userdata, message):
+        log.debug("######### Received message from CONTROL TOPIC")
+        topic = message.topic
+        log.debug(f"Received message from CONTROL TOPIC: {topic}")
+        gw_id = topic.split("/")[0]
+        log.debug(f"GW ID: {gw_id}")
+        command = topic.split("/")[-1]
+        log.debug(f"Command: {command}")
+        payload_str = message.payload.decode("utf-8")
+        payload = json.loads(payload_str)
+        log.debug(f"Received control message: {payload}")
+        if command == "pub_info":
+            gw_pub_key = bytes(payload.get("pub_key"))
+            log.debug(f"Received public key: {gw_pub_key}")
+            gw_rpc_port = payload.get("rpc_port")
+            self.handle_gw_pub_info(
+                gw_rpc_endpoint_address=gw_id,
+                gw_rpc_endpoint_port=gw_rpc_port,
+                gw_pub_key_compressed=gw_pub_key,
+            )
+        else:
+            log.warning(f"Unknown command: {command}")
 
     """
         @brief  This function init the e2l mqtt client object.
@@ -1539,6 +1562,13 @@ class E2LoRaModule:
             topic=aggr_topic, callback=self._e2l_subscribe_callback
         )
         log.debug(f"Subscribed to E2L MQTT topic {aggr_topic}")
+        # SUBSCRIBE TO CONTROL TOPIC
+        control_topic = f"+/{self.control_base_topic}/up/+"
+        log.debug(f"Subscribing to E2L MQTT topic {control_topic}...")
+        self.e2l_mqtt_client.subscribe_to_topic(
+            topic=control_topic, callback=self._e2l_subscribe_control_callback
+        )
+        log.debug(f"Subscribed to E2L MQTT topic {control_topic}")
 
     """
         @brief  This function wait for messages from the E2L MQTT broker.
