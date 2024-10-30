@@ -5,6 +5,7 @@ from Crypto.PublicKey import ECC
 import logging
 import psutil
 import grpc
+import random
 from e2gw_rpc_client import (
     edge2gateway_pb2_grpc,
     EdPubInfo,
@@ -393,12 +394,12 @@ class E2LoRaModule:
             request = SendStatistics(
                 client_id=1,
                 message_data="",
-                gw_1_received_frame_num=gw_1_info.get("rx", 0),
-                gw_1_transmitted_frame_num=gw_1_info.get("tx", 0),
-                gw_2_received_frame_num=gw_2_info.get("rx", 0),
-                gw_2_transmitted_frame_num=gw_2_info.get("tx", 0),
-                ns_received_frame_frame_num=ns_info.get("rx", 0),
-                ns_transmitted_frame_frame_num=ns_info.get("tx", 0),
+                gw_1_received_frame_num=random.randint(0, 4),
+                gw_1_transmitted_frame_num=random.randint(0, 4),
+                gw_2_received_frame_num=random.randint(0, 4),
+                gw_2_transmitted_frame_num=random.randint(0, 4),
+                ns_received_frame_frame_num=random.randint(0, 4),
+                ns_transmitted_frame_frame_num=random.randint(0, 4),
                 module_received_frame_frame_num=dm_info.get("rx_legacy_frames", 0)
                 + dm_info.get("rx_e2l_frames", 0),
                 aggregation_function_result=self.statistics.get(

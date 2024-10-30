@@ -19,6 +19,33 @@ service Edge2ApplicationServer {
   rpc gw_frames_stats (GwFrameStats) returns (ResponseMessage);
 }
 
+message Device_info {
+  string dev_id = 1;
+  double lat = 2;
+  double lon = 3;
+  float temperature = 4;
+  float humidity = 5;
+}
+
+message Device_info_list {
+  repeated Device_info device_list = 1;
+}
+
+message Gateway_info {
+  string gw_id = 1;
+  double lat = 2;
+  double lon = 3;
+  uint64 rx_frame = 4;
+  uint64 tx_frame = 5;
+  float memory = 6;
+  float cpu = 7;
+  uint64 bandwidth_reduction = 8;
+}
+
+message Gateway_info_list {
+  repeated Gateway_info gateway_list = 1;
+}
+
 message ResponseMessage {
   sint32 status_code = 1;
   string message = 2;
