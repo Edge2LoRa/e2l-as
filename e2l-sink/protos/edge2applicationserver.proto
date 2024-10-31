@@ -17,6 +17,18 @@ service Edge2ApplicationServer {
   rpc sys_log (SysLog) returns (ResponseMessage);
 
   rpc gw_frames_stats (GwFrameStats) returns (ResponseMessage);
+
+  rpc gw_list (GW_request) returns (Gateway_info_list);
+  
+  rpc dev_list (Dev_request) returns (Device_info_list);
+}
+
+message GW_request {
+  uint64 gw_number = 1;
+}
+
+message Dev_request {
+  uint64 dev_number = 1;
 }
 
 message Device_info {

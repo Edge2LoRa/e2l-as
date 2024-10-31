@@ -53,6 +53,41 @@ message SendStatistics {
     int64 aggregation_function_result = 10;
 }
 
+message Device_info {
+  string dev_id = 1;
+  double lat = 2;
+  double lon = 3;
+  float temperature = 4;
+  float humidity = 5;
+}
+
+message Device_info_list {
+  repeated Device_info device_list = 1;
+}
+
+message Gateway_info {
+  string gw_id = 1;
+  double lat = 2;
+  double lon = 3;
+  uint64 rx_frame = 4;
+  uint64 tx_frame = 5;
+  float memory = 6;
+  float cpu = 7;
+  uint64 bandwidth_reduction = 8;
+}
+
+message Gateway_info_list {
+  repeated Gateway_info gateway_list = 1;
+}
+
+message RequesGWInfo {
+    string request = 1;
+}
+
+message RequestDevInfo {
+    string request = 1;
+}
+
 message ReplyStatistics {
     int64 server_id = 1;
     string response_data = 2;
@@ -186,6 +221,11 @@ service GRPCDemo {
     // unary-unary(In a single call, the client can only send request once, and the server can
     // only respond once.)
     rpc SimpleMethodsLogDM (SendLogDM) returns (ReplyLogDM);
+    
+    // unary-unary (in a single call, the client can request the update of all the gateway informations)
+    rpc SimpleMethodGWInfo (RequesGWInfo) returns (Gateway_info_list);
 
+    // unary-unary (in a single call, the client can request the update of all the device informations)
+    rpc SimpleMethodDevInfo (RequestDevInfo) returns (Device_info_list);
 
 }
