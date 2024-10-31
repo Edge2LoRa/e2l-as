@@ -19,6 +19,10 @@ from .__private__ import (
     SendStatistics,
     SendLogMessage,
     SendJoinUpdateMessage,
+    Gateway_info_list,
+    Gateway_info,
+    Device_info_list,
+    Device_info
 )
 from mqtt_module import MQTTModule
 import json
@@ -409,6 +413,29 @@ class E2LoRaModule:
             yield request
             # time.sleep(5)
 
+
+    """
+        @brief  This function collects the current information for all the gateways.
+        @return an object containing the list of gateways current stats
+    """
+
+    def _get_gw_stats(self):
+
+        gateway_list = Gateway_info_list(
+            gateway_list=[]
+            )
+        
+        for gw_id in self.e2gw_ids:
+            gw_info = self.statistics["gateways"].get(gw_id, {})
+            gateway = Gateway_info(
+                gw_id=gw_id,
+                rx=gw_info.get("rx", 0),
+                tx=gw_info.get("tx", 0),
+            )
+            gateway_list.gateway_info.append(gateway)
+        
+        return gateway_list
+
     """
         @brief This function updated the paramenters according to the settings of the dashboard.
                 It can trigger a change in the aggregation function and window size of the gateways, or
@@ -576,6 +603,9 @@ class E2LoRaModule:
             response = self.dashboard_rpc_stub.ClientStreamingMethodStatistics(
                 self._get_stats()
             )
+            log.debug(f"Sending current statistics of gateways to dashboard")
+            
+            gw_stats = self._get_gw_stats()
             log.debug(f"Received commands from dashboard:\n{response}")
             ed_1_gw_selection = response.ed_1_gw_selection
             ed_2_gw_selection = response.ed_2_gw_selection

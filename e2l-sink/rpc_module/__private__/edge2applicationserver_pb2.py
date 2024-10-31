@@ -24,7 +24,7 @@ _sym_db = _symbol_database.Default()
 
 
 
-DESCRIPTOR = _descriptor_pool.Default().AddSerializedFile(b'\n\x1c\x65\x64ge2applicationserver.proto\x12\x16\x65\x64ge2applicationserver\"\x1f\n\nGW_request\x12\x11\n\tgw_number\x18\x01 \x01(\x04\"!\n\x0b\x44\x65v_request\x12\x12\n\ndev_number\x18\x01 \x01(\x04\"^\n\x0b\x44\x65vice_info\x12\x0e\n\x06\x64\x65v_id\x18\x01 \x01(\t\x12\x0b\n\x03lat\x18\x02 \x01(\x01\x12\x0b\n\x03lon\x18\x03 \x01(\x01\x12\x13\n\x0btemperature\x18\x04 \x01(\x02\x12\x10\n\x08humidity\x18\x05 \x01(\x02\"L\n\x10\x44\x65vice_info_list\x12\x38\n\x0b\x64\x65vice_list\x18\x01 \x03(\x0b\x32#.edge2applicationserver.Device_info\"\x95\x01\n\x0cGateway_info\x12\r\n\x05gw_id\x18\x01 \x01(\t\x12\x0b\n\x03lat\x18\x02 \x01(\x01\x12\x0b\n\x03lon\x18\x03 \x01(\x01\x12\x10\n\x08rx_frame\x18\x04 \x01(\x04\x12\x10\n\x08tx_frame\x18\x05 \x01(\x04\x12\x0e\n\x06memory\x18\x06 \x01(\x02\x12\x0b\n\x03\x63pu\x18\x07 \x01(\x02\x12\x1b\n\x13\x62\x61ndwidth_reduction\x18\x08 \x01(\x04\"O\n\x11Gateway_info_list\x12:\n\x0cgateway_list\x18\x01 \x03(\x0b\x32$.edge2applicationserver.Gateway_info\"7\n\x0fResponseMessage\x12\x13\n\x0bstatus_code\x18\x01 \x01(\x11\x12\x0f\n\x07message\x18\x02 \x01(\t\"H\n\x0b\x45\x32GWPubInfo\x12\x12\n\ngw_ip_addr\x18\x01 \x01(\t\x12\x0f\n\x07gw_port\x18\x02 \x01(\t\x12\x14\n\x0c\x65\x32gw_pub_key\x18\x03 \x01(\x0c\"u\n\x08\x45\x64geData\x12\r\n\x05gw_id\x18\x01 \x01(\t\x12\x0f\n\x07\x64\x65v_eui\x18\x02 \x01(\t\x12\x10\n\x08\x64\x65v_addr\x18\x03 \x01(\t\x12\x17\n\x0f\x61ggregated_data\x18\x04 \x01(\x12\x12\r\n\x05\x66\x63nts\x18\x05 \x03(\x04\x12\x0f\n\x07timetag\x18\x06 \x01(\x04\"h\n\x05GwLog\x12\r\n\x05gw_id\x18\x01 \x01(\t\x12\x10\n\x08\x64\x65v_addr\x18\x02 \x01(\t\x12\x0b\n\x03log\x18\x03 \x01(\t\x12\x12\n\nframe_type\x18\x04 \x01(\x04\x12\x0c\n\x04\x66\x63nt\x18\x05 \x01(\x04\x12\x0f\n\x07timetag\x18\x06 \x01(\x04\"\x8b\x01\n\x06SysLog\x12\r\n\x05gw_id\x18\x01 \x01(\t\x12\x14\n\x0cmemory_usage\x18\x02 \x01(\x04\x12\x18\n\x10memory_available\x18\x03 \x01(\x04\x12\x11\n\tcpu_usage\x18\x04 \x01(\x02\x12\x15\n\rdata_received\x18\x05 \x01(\x04\x12\x18\n\x10\x64\x61ta_transmitted\x18\x06 \x01(\x04\"\xa4\x02\n\x0cGwFrameStats\x12\r\n\x05gw_id\x18\x01 \x01(\t\x12\x15\n\rlegacy_frames\x18\x02 \x01(\x04\x12\x38\n\x0clegacy_fcnts\x18\x03 \x03(\x0b\x32\".edge2applicationserver.FcntStruct\x12\x13\n\x0b\x65\x64ge_frames\x18\x04 \x01(\x04\x12\x36\n\nedge_fcnts\x18\x05 \x03(\x0b\x32\".edge2applicationserver.FcntStruct\x12!\n\x19\x65\x64ge_not_processed_frames\x18\x06 \x01(\x04\x12\x44\n\x18\x65\x64ge_not_processed_fcnts\x18\x07 \x03(\x0b\x32\".edge2applicationserver.FcntStruct\",\n\nFcntStruct\x12\x10\n\x08\x64\x65v_addr\x18\x03 \x01(\t\x12\x0c\n\x04\x66\x63nt\x18\x02 \x01(\x04\x32\x91\x05\n\x16\x45\x64ge2ApplicationServer\x12U\n\x08new_data\x12 .edge2applicationserver.EdgeData\x1a\'.edge2applicationserver.ResponseMessage\x12\x63\n\x13store_e2gw_pub_info\x12#.edge2applicationserver.E2GWPubInfo\x1a\'.edge2applicationserver.ResponseMessage\x12P\n\x06gw_log\x12\x1d.edge2applicationserver.GwLog\x1a\'.edge2applicationserver.ResponseMessage\x12R\n\x07sys_log\x12\x1e.edge2applicationserver.SysLog\x1a\'.edge2applicationserver.ResponseMessage\x12`\n\x0fgw_frames_stats\x12$.edge2applicationserver.GwFrameStats\x1a\'.edge2applicationserver.ResponseMessage\x12X\n\x07gw_list\x12\".edge2applicationserver.GW_request\x1a).edge2applicationserver.Gateway_info_list\x12Y\n\x08\x64\x65v_list\x12#.edge2applicationserver.Dev_request\x1a(.edge2applicationserver.Device_info_listB:\n\x1dio.grpc.examples.edge2lorarpcB\x11\x45\x64ge2LoRaRPCProtoP\x01\xa2\x02\x03\x45\x32Lb\x06proto3')
+DESCRIPTOR = _descriptor_pool.Default().AddSerializedFile(b'\n\x1c\x65\x64ge2applicationserver.proto\x12\x16\x65\x64ge2applicationserver\"7\n\x0fResponseMessage\x12\x13\n\x0bstatus_code\x18\x01 \x01(\x11\x12\x0f\n\x07message\x18\x02 \x01(\t\"H\n\x0b\x45\x32GWPubInfo\x12\x12\n\ngw_ip_addr\x18\x01 \x01(\t\x12\x0f\n\x07gw_port\x18\x02 \x01(\t\x12\x14\n\x0c\x65\x32gw_pub_key\x18\x03 \x01(\x0c\"u\n\x08\x45\x64geData\x12\r\n\x05gw_id\x18\x01 \x01(\t\x12\x0f\n\x07\x64\x65v_eui\x18\x02 \x01(\t\x12\x10\n\x08\x64\x65v_addr\x18\x03 \x01(\t\x12\x17\n\x0f\x61ggregated_data\x18\x04 \x01(\x12\x12\r\n\x05\x66\x63nts\x18\x05 \x03(\x04\x12\x0f\n\x07timetag\x18\x06 \x01(\x04\"h\n\x05GwLog\x12\r\n\x05gw_id\x18\x01 \x01(\t\x12\x10\n\x08\x64\x65v_addr\x18\x02 \x01(\t\x12\x0b\n\x03log\x18\x03 \x01(\t\x12\x12\n\nframe_type\x18\x04 \x01(\x04\x12\x0c\n\x04\x66\x63nt\x18\x05 \x01(\x04\x12\x0f\n\x07timetag\x18\x06 \x01(\x04\"\x8b\x01\n\x06SysLog\x12\r\n\x05gw_id\x18\x01 \x01(\t\x12\x14\n\x0cmemory_usage\x18\x02 \x01(\x04\x12\x18\n\x10memory_available\x18\x03 \x01(\x04\x12\x11\n\tcpu_usage\x18\x04 \x01(\x02\x12\x15\n\rdata_received\x18\x05 \x01(\x04\x12\x18\n\x10\x64\x61ta_transmitted\x18\x06 \x01(\x04\"\xa4\x02\n\x0cGwFrameStats\x12\r\n\x05gw_id\x18\x01 \x01(\t\x12\x15\n\rlegacy_frames\x18\x02 \x01(\x04\x12\x38\n\x0clegacy_fcnts\x18\x03 \x03(\x0b\x32\".edge2applicationserver.FcntStruct\x12\x13\n\x0b\x65\x64ge_frames\x18\x04 \x01(\x04\x12\x36\n\nedge_fcnts\x18\x05 \x03(\x0b\x32\".edge2applicationserver.FcntStruct\x12!\n\x19\x65\x64ge_not_processed_frames\x18\x06 \x01(\x04\x12\x44\n\x18\x65\x64ge_not_processed_fcnts\x18\x07 \x03(\x0b\x32\".edge2applicationserver.FcntStruct\",\n\nFcntStruct\x12\x10\n\x08\x64\x65v_addr\x18\x03 \x01(\t\x12\x0c\n\x04\x66\x63nt\x18\x02 \x01(\x04\x32\xdc\x03\n\x16\x45\x64ge2ApplicationServer\x12U\n\x08new_data\x12 .edge2applicationserver.EdgeData\x1a\'.edge2applicationserver.ResponseMessage\x12\x63\n\x13store_e2gw_pub_info\x12#.edge2applicationserver.E2GWPubInfo\x1a\'.edge2applicationserver.ResponseMessage\x12P\n\x06gw_log\x12\x1d.edge2applicationserver.GwLog\x1a\'.edge2applicationserver.ResponseMessage\x12R\n\x07sys_log\x12\x1e.edge2applicationserver.SysLog\x1a\'.edge2applicationserver.ResponseMessage\x12`\n\x0fgw_frames_stats\x12$.edge2applicationserver.GwFrameStats\x1a\'.edge2applicationserver.ResponseMessageB:\n\x1dio.grpc.examples.edge2lorarpcB\x11\x45\x64ge2LoRaRPCProtoP\x01\xa2\x02\x03\x45\x32Lb\x06proto3')
 
 _globals = globals()
 _builder.BuildMessageAndEnumDescriptors(DESCRIPTOR, _globals)
@@ -32,32 +32,20 @@ _builder.BuildTopDescriptorsAndMessages(DESCRIPTOR, 'edge2applicationserver_pb2'
 if not _descriptor._USE_C_DESCRIPTORS:
   _globals['DESCRIPTOR']._loaded_options = None
   _globals['DESCRIPTOR']._serialized_options = b'\n\035io.grpc.examples.edge2lorarpcB\021Edge2LoRaRPCProtoP\001\242\002\003E2L'
-  _globals['_GW_REQUEST']._serialized_start=56
-  _globals['_GW_REQUEST']._serialized_end=87
-  _globals['_DEV_REQUEST']._serialized_start=89
-  _globals['_DEV_REQUEST']._serialized_end=122
-  _globals['_DEVICE_INFO']._serialized_start=124
-  _globals['_DEVICE_INFO']._serialized_end=218
-  _globals['_DEVICE_INFO_LIST']._serialized_start=220
-  _globals['_DEVICE_INFO_LIST']._serialized_end=296
-  _globals['_GATEWAY_INFO']._serialized_start=299
-  _globals['_GATEWAY_INFO']._serialized_end=448
-  _globals['_GATEWAY_INFO_LIST']._serialized_start=450
-  _globals['_GATEWAY_INFO_LIST']._serialized_end=529
-  _globals['_RESPONSEMESSAGE']._serialized_start=531
-  _globals['_RESPONSEMESSAGE']._serialized_end=586
-  _globals['_E2GWPUBINFO']._serialized_start=588
-  _globals['_E2GWPUBINFO']._serialized_end=660
-  _globals['_EDGEDATA']._serialized_start=662
-  _globals['_EDGEDATA']._serialized_end=779
-  _globals['_GWLOG']._serialized_start=781
-  _globals['_GWLOG']._serialized_end=885
-  _globals['_SYSLOG']._serialized_start=888
-  _globals['_SYSLOG']._serialized_end=1027
-  _globals['_GWFRAMESTATS']._serialized_start=1030
-  _globals['_GWFRAMESTATS']._serialized_end=1322
-  _globals['_FCNTSTRUCT']._serialized_start=1324
-  _globals['_FCNTSTRUCT']._serialized_end=1368
-  _globals['_EDGE2APPLICATIONSERVER']._serialized_start=1371
-  _globals['_EDGE2APPLICATIONSERVER']._serialized_end=2028
+  _globals['_RESPONSEMESSAGE']._serialized_start=56
+  _globals['_RESPONSEMESSAGE']._serialized_end=111
+  _globals['_E2GWPUBINFO']._serialized_start=113
+  _globals['_E2GWPUBINFO']._serialized_end=185
+  _globals['_EDGEDATA']._serialized_start=187
+  _globals['_EDGEDATA']._serialized_end=304
+  _globals['_GWLOG']._serialized_start=306
+  _globals['_GWLOG']._serialized_end=410
+  _globals['_SYSLOG']._serialized_start=413
+  _globals['_SYSLOG']._serialized_end=552
+  _globals['_GWFRAMESTATS']._serialized_start=555
+  _globals['_GWFRAMESTATS']._serialized_end=847
+  _globals['_FCNTSTRUCT']._serialized_start=849
+  _globals['_FCNTSTRUCT']._serialized_end=893
+  _globals['_EDGE2APPLICATIONSERVER']._serialized_start=896
+  _globals['_EDGE2APPLICATIONSERVER']._serialized_end=1372
 # @@protoc_insertion_point(module_scope)

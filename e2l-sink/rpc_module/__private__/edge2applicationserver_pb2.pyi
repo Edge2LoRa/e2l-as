@@ -5,64 +5,6 @@ from typing import ClassVar as _ClassVar, Iterable as _Iterable, Mapping as _Map
 
 DESCRIPTOR: _descriptor.FileDescriptor
 
-class GW_request(_message.Message):
-    __slots__ = ("gw_number",)
-    GW_NUMBER_FIELD_NUMBER: _ClassVar[int]
-    gw_number: int
-    def __init__(self, gw_number: _Optional[int] = ...) -> None: ...
-
-class Dev_request(_message.Message):
-    __slots__ = ("dev_number",)
-    DEV_NUMBER_FIELD_NUMBER: _ClassVar[int]
-    dev_number: int
-    def __init__(self, dev_number: _Optional[int] = ...) -> None: ...
-
-class Device_info(_message.Message):
-    __slots__ = ("dev_id", "lat", "lon", "temperature", "humidity")
-    DEV_ID_FIELD_NUMBER: _ClassVar[int]
-    LAT_FIELD_NUMBER: _ClassVar[int]
-    LON_FIELD_NUMBER: _ClassVar[int]
-    TEMPERATURE_FIELD_NUMBER: _ClassVar[int]
-    HUMIDITY_FIELD_NUMBER: _ClassVar[int]
-    dev_id: str
-    lat: float
-    lon: float
-    temperature: float
-    humidity: float
-    def __init__(self, dev_id: _Optional[str] = ..., lat: _Optional[float] = ..., lon: _Optional[float] = ..., temperature: _Optional[float] = ..., humidity: _Optional[float] = ...) -> None: ...
-
-class Device_info_list(_message.Message):
-    __slots__ = ("device_list",)
-    DEVICE_LIST_FIELD_NUMBER: _ClassVar[int]
-    device_list: _containers.RepeatedCompositeFieldContainer[Device_info]
-    def __init__(self, device_list: _Optional[_Iterable[_Union[Device_info, _Mapping]]] = ...) -> None: ...
-
-class Gateway_info(_message.Message):
-    __slots__ = ("gw_id", "lat", "lon", "rx_frame", "tx_frame", "memory", "cpu", "bandwidth_reduction")
-    GW_ID_FIELD_NUMBER: _ClassVar[int]
-    LAT_FIELD_NUMBER: _ClassVar[int]
-    LON_FIELD_NUMBER: _ClassVar[int]
-    RX_FRAME_FIELD_NUMBER: _ClassVar[int]
-    TX_FRAME_FIELD_NUMBER: _ClassVar[int]
-    MEMORY_FIELD_NUMBER: _ClassVar[int]
-    CPU_FIELD_NUMBER: _ClassVar[int]
-    BANDWIDTH_REDUCTION_FIELD_NUMBER: _ClassVar[int]
-    gw_id: str
-    lat: float
-    lon: float
-    rx_frame: int
-    tx_frame: int
-    memory: float
-    cpu: float
-    bandwidth_reduction: int
-    def __init__(self, gw_id: _Optional[str] = ..., lat: _Optional[float] = ..., lon: _Optional[float] = ..., rx_frame: _Optional[int] = ..., tx_frame: _Optional[int] = ..., memory: _Optional[float] = ..., cpu: _Optional[float] = ..., bandwidth_reduction: _Optional[int] = ...) -> None: ...
-
-class Gateway_info_list(_message.Message):
-    __slots__ = ("gateway_list",)
-    GATEWAY_LIST_FIELD_NUMBER: _ClassVar[int]
-    gateway_list: _containers.RepeatedCompositeFieldContainer[Gateway_info]
-    def __init__(self, gateway_list: _Optional[_Iterable[_Union[Gateway_info, _Mapping]]] = ...) -> None: ...
-
 class ResponseMessage(_message.Message):
     __slots__ = ("status_code", "message")
     STATUS_CODE_FIELD_NUMBER: _ClassVar[int]

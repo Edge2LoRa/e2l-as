@@ -60,16 +60,6 @@ class Edge2ApplicationServerStub(object):
                 request_serializer=edge2applicationserver__pb2.GwFrameStats.SerializeToString,
                 response_deserializer=edge2applicationserver__pb2.ResponseMessage.FromString,
                 _registered_method=True)
-        self.gw_list = channel.unary_unary(
-                '/edge2applicationserver.Edge2ApplicationServer/gw_list',
-                request_serializer=edge2applicationserver__pb2.GW_request.SerializeToString,
-                response_deserializer=edge2applicationserver__pb2.Gateway_info_list.FromString,
-                _registered_method=True)
-        self.dev_list = channel.unary_unary(
-                '/edge2applicationserver.Edge2ApplicationServer/dev_list',
-                request_serializer=edge2applicationserver__pb2.Dev_request.SerializeToString,
-                response_deserializer=edge2applicationserver__pb2.Device_info_list.FromString,
-                _registered_method=True)
 
 
 class Edge2ApplicationServerServicer(object):
@@ -105,18 +95,6 @@ class Edge2ApplicationServerServicer(object):
         context.set_details('Method not implemented!')
         raise NotImplementedError('Method not implemented!')
 
-    def gw_list(self, request, context):
-        """Missing associated documentation comment in .proto file."""
-        context.set_code(grpc.StatusCode.UNIMPLEMENTED)
-        context.set_details('Method not implemented!')
-        raise NotImplementedError('Method not implemented!')
-
-    def dev_list(self, request, context):
-        """Missing associated documentation comment in .proto file."""
-        context.set_code(grpc.StatusCode.UNIMPLEMENTED)
-        context.set_details('Method not implemented!')
-        raise NotImplementedError('Method not implemented!')
-
 
 def add_Edge2ApplicationServerServicer_to_server(servicer, server):
     rpc_method_handlers = {
@@ -144,16 +122,6 @@ def add_Edge2ApplicationServerServicer_to_server(servicer, server):
                     servicer.gw_frames_stats,
                     request_deserializer=edge2applicationserver__pb2.GwFrameStats.FromString,
                     response_serializer=edge2applicationserver__pb2.ResponseMessage.SerializeToString,
-            ),
-            'gw_list': grpc.unary_unary_rpc_method_handler(
-                    servicer.gw_list,
-                    request_deserializer=edge2applicationserver__pb2.GW_request.FromString,
-                    response_serializer=edge2applicationserver__pb2.Gateway_info_list.SerializeToString,
-            ),
-            'dev_list': grpc.unary_unary_rpc_method_handler(
-                    servicer.dev_list,
-                    request_deserializer=edge2applicationserver__pb2.Dev_request.FromString,
-                    response_serializer=edge2applicationserver__pb2.Device_info_list.SerializeToString,
             ),
     }
     generic_handler = grpc.method_handlers_generic_handler(
@@ -291,60 +259,6 @@ class Edge2ApplicationServer(object):
             '/edge2applicationserver.Edge2ApplicationServer/gw_frames_stats',
             edge2applicationserver__pb2.GwFrameStats.SerializeToString,
             edge2applicationserver__pb2.ResponseMessage.FromString,
-            options,
-            channel_credentials,
-            insecure,
-            call_credentials,
-            compression,
-            wait_for_ready,
-            timeout,
-            metadata,
-            _registered_method=True)
-
-    @staticmethod
-    def gw_list(request,
-            target,
-            options=(),
-            channel_credentials=None,
-            call_credentials=None,
-            insecure=False,
-            compression=None,
-            wait_for_ready=None,
-            timeout=None,
-            metadata=None):
-        return grpc.experimental.unary_unary(
-            request,
-            target,
-            '/edge2applicationserver.Edge2ApplicationServer/gw_list',
-            edge2applicationserver__pb2.GW_request.SerializeToString,
-            edge2applicationserver__pb2.Gateway_info_list.FromString,
-            options,
-            channel_credentials,
-            insecure,
-            call_credentials,
-            compression,
-            wait_for_ready,
-            timeout,
-            metadata,
-            _registered_method=True)
-
-    @staticmethod
-    def dev_list(request,
-            target,
-            options=(),
-            channel_credentials=None,
-            call_credentials=None,
-            insecure=False,
-            compression=None,
-            wait_for_ready=None,
-            timeout=None,
-            metadata=None):
-        return grpc.experimental.unary_unary(
-            request,
-            target,
-            '/edge2applicationserver.Edge2ApplicationServer/dev_list',
-            edge2applicationserver__pb2.Dev_request.SerializeToString,
-            edge2applicationserver__pb2.Device_info_list.FromString,
             options,
             channel_credentials,
             insecure,
