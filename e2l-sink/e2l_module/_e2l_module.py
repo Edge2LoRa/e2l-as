@@ -425,16 +425,44 @@ class E2LoRaModule:
             gateway_list=[]
             )
         
-        for gw_id in self.e2gw_ids:
-            gw_info = self.statistics["gateways"].get(gw_id, {})
+        for gw_id in range(3):
+            print(gw_id)
+
             gateway = Gateway_info(
-                gw_id=gw_id,
-                rx=gw_info.get("rx", 0),
-                tx=gw_info.get("tx", 0),
+                gw_id=str(gw_id),
+                rx_frame=0,
+                tx_frame=0,
             )
-            gateway_list.gateway_info.append(gateway)
+            gateway_list.gateway_list.append(gateway)
         
         return gateway_list
+
+        """
+        @brief  This function collects the current information for all the gateways.
+        @return an object containing the list of gateways current stats
+    """
+
+    def _get_dev_stats(self):
+
+        devices_list = Device_info_list(
+            device_list=[]
+            )
+        
+        for dev_id in range(1,10):
+            print(dev_id)
+            
+            device = Device_info(
+                dev_id=str(dev_id),
+                lat = 41.90 + random.uniform(-0.1, 0.1),
+                lon = 12.49 + random.uniform(-0.1, 0.1),
+                temperature=0,
+                humidity=0
+            )
+            devices_list.device_list.append(device)
+        
+        return devices_list
+
+
 
     """
         @brief This function updated the paramenters according to the settings of the dashboard.
@@ -603,9 +631,15 @@ class E2LoRaModule:
             response = self.dashboard_rpc_stub.ClientStreamingMethodStatistics(
                 self._get_stats()
             )
+
             log.debug(f"Sending current statistics of gateways to dashboard")
-            
-            gw_stats = self._get_gw_stats()
+
+            _response = self.dashboard_rpc_stub.SimpleMethodGWInfo(self._get_gw_stats())
+            log.debug(f"Received from dashboard response:\n{_response}")
+
+            _response = self.dashboard_rpc_stub.SimpleMethodDevInfo(self._get_dev_stats())
+            log.debug(f"Received from dashboard response:\n{_response}")
+
             log.debug(f"Received commands from dashboard:\n{response}")
             ed_1_gw_selection = response.ed_1_gw_selection
             ed_2_gw_selection = response.ed_2_gw_selection
