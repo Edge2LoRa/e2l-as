@@ -425,13 +425,15 @@ class E2LoRaModule:
             gateway_list=[]
             )
         
-        for gw_id in range(3):
+        for gw_id in range(50):
             print(gw_id)
 
             gateway = Gateway_info(
                 gw_id=str(gw_id),
-                rx_frame=0,
-                tx_frame=0,
+                rx_frame=random.randint(0, 10),
+                tx_frame=random.randint(0, 10),
+                memory=random.randint(0, 100),
+                cpu=random.randint(0, 100),
             )
             gateway_list.gateway_list.append(gateway)
         
