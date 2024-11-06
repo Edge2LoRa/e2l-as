@@ -18,6 +18,7 @@ from .__private__ import (
     SendStatistics,
     SendLogMessage,
     SendJoinUpdateMessage,
+    E2LBrokerApi,
 )
 from mqtt_module import MQTTModule
 import json
@@ -145,6 +146,17 @@ class E2LoRaModule:
         self.input_process_topic = os.getenv("E2L_MQTT_AGGR_INPUT_TOPIC")
         self.control_base_topic = os.getenv("E2L_MQTT_CONTROL_BASE_TOPIC")
         log.debug("Connected to E2L MQTT broker")
+        #############################
+        #   INIT E2L BROKER API     #
+        #############################
+        self.e2l_broker_api = E2LBrokerApi(
+            broker_api_username=os.getenv("E2L_BROKER_API_USERNAME"),
+            broker_api_password=os.getenv("E2L_BROKER_API_PASSWORD"),
+            broker_api_host=os.getenv("E2L_MQTT_HOST"),
+            broker_api_port=os.getenv("E2L_BROKER_API_PORT"),
+            broker_mqtt_username=os.getenv("E2L_MQTT_USERNAME"),
+            broker_mqtt_password=os.getenv("E2L_MQTT_PASSWORD"),
+        )
         # Aggregation Utils
         self.ed_1_gw_selection = None
         self.ed_2_gw_selection = None
@@ -690,8 +702,8 @@ class E2LoRaModule:
     """
         @brief  This funciont handle new public key info received by a GW.
                 It initialize a RPC client for each GW.
-        @param gw_rpc_endpoint_address: The IP address of the Gateway.
-        @param gw_rpc_endpoint_port: The port of the Gateway.
+        @param gw_id: The IP address of the Gateway.
+        @param gw_mqtt_endpoint_port: The MQTT port of the Gateway.
         @param gw_pub_key_bytes: The E2GW Public Key.
         @return 0 is success, < 0 if failure.
         @error code
@@ -699,7 +711,10 @@ class E2LoRaModule:
     """
 
     def handle_gw_pub_info(
-        self, gw_rpc_endpoint_address, gw_rpc_endpoint_port, gw_pub_key_compressed
+        self,
+        gw_id,
+        gw_mqtt_endpoint_port,
+        gw_pub_key_compressed,
     ):
         # Retireve Info
         gw_pub_key = ECC.import_key(gw_pub_key_compressed, curve_name="P-256")
@@ -708,33 +723,40 @@ class E2LoRaModule:
             curve="P-256", point_x=g_as_gw_point.x, point_y=g_as_gw_point.y
         )
 
-        # Init RPC Client
-        log.debug(
-            f"Init RPC Client for GW {gw_rpc_endpoint_address}:{gw_rpc_endpoint_port}"
-        )
-        channel = grpc.insecure_channel(
-            f"{gw_rpc_endpoint_address}:{gw_rpc_endpoint_port}"
-        )
-        stub = edge2gateway_pb2_grpc.Edge2GatewayStub(channel)
+        # # Init RPC Client
+        # log.debug(
+        #     f"Init RPC Client for GW {gw_id}:{gw_rpc_endpoint_port}"
+        # )
+        # channel = grpc.insecure_channel(
+        #     f"{gw_id}:{gw_rpc_endpoint_port}"
+        # )
+        # stub = edge2gateway_pb2_grpc.Edge2GatewayStub(channel)
 
-        self.active_directory["e2gws"][gw_rpc_endpoint_address] = {
-            "gw_rpc_endpoint_address": gw_rpc_endpoint_address,
-            "gw_rpc_endpoint_port": gw_rpc_endpoint_port,
+        self.active_directory["e2gws"][gw_id] = {
+            "gw_id": gw_id,
             "gw_pub_key": gw_pub_key,
             "g_as_gw": g_as_gw,
-            "e2gw_stub": stub,
+            "e2gw_stub": None,
         }
-        if self.statistics.get("gateways").get(gw_rpc_endpoint_address) is None:
-            self.statistics["gateways"][gw_rpc_endpoint_address] = {"rx": 0, "tx": 0}
+        # CREATE EGRESS BRIDGE
+        # TODO: MODIFY IP TO BE GENERIC AND NOT HARDCODED
+        self.e2l_broker_api.create_egress_bridge(
+            bridge_name=gw_id,
+            server=f"192.168.1.160:{gw_mqtt_endpoint_port}",
+            topic=f"{gw_id}/{self.control_base_topic}/down/#",
+        )
+
+        if self.statistics.get("gateways").get(gw_id) is None:
+            self.statistics["gateways"][gw_id] = {"rx": 0, "tx": 0}
         log_type = None
         log_message = ""
-        if gw_rpc_endpoint_address not in self.e2gw_ids:
-            self.e2gw_ids.append(gw_rpc_endpoint_address)
+        if gw_id not in self.e2gw_ids:
+            self.e2gw_ids.append(gw_id)
             log_message = f"Added GW info in DM active directory"
         else:
             log_message = f"Updated GW info in DM active directory"
         # SEND LOG
-        index = self.e2gw_ids.index(gw_rpc_endpoint_address)
+        index = self.e2gw_ids.index(gw_id)
         log_type = None
         if index == 0:
             log_type = LOG_GW1
@@ -791,6 +813,8 @@ class E2LoRaModule:
                         topic=f"{gw_id}/{self.control_base_topic}/down/add_unassigned_device",
                         message=json.dumps(unassigned_device_info),
                     )
+            # time.sleep(0.1)
+        log.debug(f"Total Devices: {len(self.e2ed_ids)}")
 
         return 0
 
@@ -879,7 +903,7 @@ class E2LoRaModule:
                 "dev_id": dev_id,
                 "dev_eui": dev_eui,
                 "dev_addr": dev_addr,
-                "e2gw": e2gw.get("gw_rpc_endpoint_address"),
+                "e2gw": e2gw.get("gw_id"),
             }
         else:
             dev_obj = self.active_directory["e2eds"].get(dev_eui)
@@ -930,7 +954,7 @@ class E2LoRaModule:
         edgeSKey_int = self.ephimeral_private_key.d * g_gw_ed.pointQ
         edgeSKey = edgeSKey_int.x.to_bytes()
         # SEND LOG
-        index = self.e2gw_ids.index(e2gw.get("gw_rpc_endpoint_address"))
+        index = self.e2gw_ids.index(e2gw.get("gw_id"))
         log_type = None
         if index == 0:
             log_type = LOG_GW1
@@ -962,7 +986,7 @@ class E2LoRaModule:
         # if self.e2ed_ids.index(dev_eui) == 0:
         self._send_log(
             type=LOG_ED,
-            message=f'Edge Join Completed (Dev: {dev_addr}, GW: {self.e2gw_ids.index(e2gw.get("gw_rpc_endpoint_address"))+1})',
+            message=f'Edge Join Completed (Dev: {dev_addr}, GW: {self.e2gw_ids.index(e2gw.get("gw_id"))+1})',
         )
         if log_type is not None:
             self._send_log(
@@ -975,7 +999,7 @@ class E2LoRaModule:
                 client_id=1,
                 message_data="",
                 ed_id=self.e2ed_ids.index(dev_eui) + 1,
-                gw_id=self.e2gw_ids.index(e2gw.get("gw_rpc_endpoint_address")) + 1,
+                gw_id=self.e2gw_ids.index(e2gw.get("gw_id")) + 1,
             )
             ret = self.dashboard_rpc_stub.SimpleMethodsJoinUpdateMessage(
                 join_update_message
@@ -1541,9 +1565,10 @@ class E2LoRaModule:
             gw_pub_key = bytes(payload.get("pub_key"))
             log.debug(f"Received public key: {gw_pub_key}")
             gw_rpc_port = payload.get("rpc_port")
+            gw_mqtt_port = payload.get("mqtt_port")
             self.handle_gw_pub_info(
-                gw_rpc_endpoint_address=gw_id,
-                gw_rpc_endpoint_port=gw_rpc_port,
+                gw_id=gw_id,
+                gw_mqtt_endpoint_port=gw_mqtt_port,
                 gw_pub_key_compressed=gw_pub_key,
             )
         else:
