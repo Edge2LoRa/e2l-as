@@ -6,6 +6,7 @@ import logging
 import psutil
 import grpc
 import random
+import pandas as pd
 from e2gw_rpc_client import (
     edge2gateway_pb2_grpc,
     EdPubInfo,
@@ -89,6 +90,10 @@ class E2LoRaModule:
         self.e2gw_ids = []
         self.e2ed_ids = []
         self.ed_ids = []
+        self.simulation_dataframe = pd.read_csv("noisy_generated_data_lat_lon.csv")
+        self.snapshots_list = self.simulation_dataframe["snapshot"].unique()
+        self.current_snapshot_position = 0
+
         self.legacy_not_duplicates = {}
         self.legacy_dropped = 0
         self.legacy_not_duplicates_lock = Lock()
@@ -425,6 +430,9 @@ class E2LoRaModule:
             gateway_list=[]
             )
         
+        
+
+
         for gw_id in range(50):
             print(gw_id)
 
@@ -449,19 +457,22 @@ class E2LoRaModule:
         devices_list = Device_info_list(
             device_list=[]
             )
-        
-        for dev_id in range(1,10):
-            print(dev_id)
-            
+        temp_dataframe = self.simulation_dataframe[self.simulation_dataframe["snapshot"] == self.snapshots_list[self.current_snapshot_position]]
+
+        for index, row in temp_dataframe.iterrows():
             device = Device_info(
-                dev_id=str(dev_id),
-                lat = 41.90 + random.uniform(-0.1, 0.1),
-                lon = 12.49 + random.uniform(-0.1, 0.1),
+                dev_id=str(row["NODE_ID"]),
+                lat=row["lat"],
+                lon=row["lon"],
                 temperature=0,
                 humidity=0
             )
             devices_list.device_list.append(device)
-        
+
+        self.current_snapshot_position+=1
+        if self.current_snapshot_position == len(self.snapshots_list):
+            self.current_snapshot_position = 0
+
         return devices_list
 
 
