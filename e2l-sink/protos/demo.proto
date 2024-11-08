@@ -100,6 +100,10 @@ message ReplyStatistics {
     string process_function = 7;
     int64 process_window = 8;
     int64 change_processing_configuraiton = 9;
+    string scenario = 10;
+    string assining_policy = 11;
+    int64 refreshing_table_rate = 12;
+    
 }
 
 /*
