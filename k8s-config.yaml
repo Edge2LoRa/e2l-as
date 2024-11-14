@@ -1,0 +1,227 @@
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: e2as
+  namespace: edge2lora
+spec:
+  selector:
+    matchLabels:
+      app: e2as
+  replicas: 1 
+  template:
+    metadata:
+      labels:
+        app: e2as # has to match .spec.selector.matchLabels
+    spec:
+      # nodeSelector:
+      #   machine-as: "yes"
+      # TO ENABLE IN PRODUCTION TO DISTRIBUTE PODS ACROSS NODES
+      # affinity:
+      #   podAntiAffinity:
+      #     requiredDuringSchedulingIgnoredDuringExecution:
+      #     - labelSelector:
+      #         matchExpressions:
+      #         - key: app
+      #           operator: In
+      #           values:
+      #           - e2as
+      #       topologyKey: "kubernetes.io/hostname"
+      terminationGracePeriodSeconds: 10
+      volumes:
+      - name: api-key
+        secret:
+          secretName: emqx-api-key
+      containers:
+      - name: broker
+        image: emqx/emqx:5.8.0
+        env:
+        - name: EMQX_API_KEY__BOOTSTRAP_FILE
+          value: /opt/emqx/etc/default_api_key/default_api_key.conf
+        ports:
+        - containerPort: 1883
+          name: mqtt
+        - containerPort: 8083
+          name: http
+        - containerPort: 8084
+          name: https
+        - containerPort: 8883
+          name: mqtts
+        - containerPort: 18083
+          name: dashboard-api
+        volumeMounts:
+        - name: api-key
+          mountPath: /opt/emqx/etc/default_api_key/
+      - name: sink
+        image: ghcr.io/edge2lora/e2l-sink:load-balancing-6
+        ports:
+        - containerPort: 50051
+          name: grpc
+        env:
+        - name: DEBUG
+          value: "1"
+        - name: TTS_MQTT_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: tts-broker-credentials
+              key: tts-broker-username
+        - name: TTS_MQTT_USERNAME
+          valueFrom:
+            secretKeyRef:
+              name: tts-broker-credentials
+              key: tts-broker-username
+        - name: TTS_MQTT_HOST
+          value: "TBD"
+        - name: TTS_MQTT_PORT
+          value: 1883
+        - name: TTS_MQTT_BASE_TOPIC
+          value: v3/edge2lora/devices/
+        - name: TTS_MQTT_UPLINK_TOPIC
+          value: v3/edge2lora/devices/+/up
+        - name: TTS_MQTT_OTAA_TOPIC
+          value: v3/edge2lora/devices/+/join
+
+        - name: DASHBOARD_RPC_HOST
+          value: 127.0.0.1
+        - name: DASHBOARD_RPC_PORT
+          value: 23333
+
+        - name: RPC_SERVER_PORT
+          value: 50051
+
+        - name: MONGO_HOST
+          value: "TBD"
+        - name: MONGO_PORT
+          value: "27017"
+        - name: MONGO_DB_NAME
+          value: "TBD"
+
+        - name: DEVICE_LIST_FILE
+          value: device_files/devices.json
+        
+        - name: SPLIT_DEVICES
+          value: 0
+        - name: GW_NUMBER
+          value: 1
+        - name: ENABLE_MOBILITY
+          value: 1
+
+        - name: GW_SHUT
+          value: 0 # 1 enabled, disabled otherwise
+        - name: DEVICE_NUMBER
+          value: 3
+        - name: PACKET_NUMBER
+          value: 10
+        - name: PACKET_DIVISOR
+          value: 4
+
+
+        - name: E2L_MQTT_USERNAME
+          valueFrom:
+            secretKeyRef:
+              name: mqtt-broker-credentials
+              key: mqtt-broker-username
+        - name: E2L_MQTT_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: mqtt-broker-credentials
+              key: mqtt-broker-password
+        - name: E2L_MQTT_HOST
+          value: localhost
+        - name: E2L_MQTT_PORT
+          value: "10883"
+        - name: E2L_MQTT_AGGR_INPUT_TOPIC
+          value: process/input
+        - name: E2L_MQTT_AGGR_OUTPUT_TOPIC
+          value: "+/e2l-process/output/aggregation"
+        - name: E2L_MQTT_CONTROL_BASE_TOPIC
+          value: "edge2lora/control"
+        - name: E2L_BROKER_API_PORT
+          value: "18083"
+        - name: E2L_BROKER_API_USERNAME
+          valueFrom:
+            secretKeyRef:
+              name: api-broker-credentials
+              key: api-broker-username
+        - name: E2L_BROKER_API_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: api-broker-credentials
+              key: api-broker-password
+
+      # - name: process
+      #   image: ghcr.io/edge2lora/e2l-process:hampel-load-balancing-12
+      #   env:
+      #   - name: MQTT_USERNAME
+      #     valueFrom:
+      #       secretKeyRef:
+      #         name: mqtt-broker-credentials
+      #         key: mqtt-broker-username
+      #   - name: MQTT_PASSWORD
+      #     valueFrom:
+      #       secretKeyRef:
+      #         name: mqtt-broker-credentials
+      #         key: mqtt-broker-password
+      #   - name: MQTT_BROKER_HOST
+      #     value: "localhost"
+      #   - name: MQTT_BROKER_PORT
+      #     value: "1883"
+      #   - name: MQTT_TOPIC
+      #     value: "e2l/process/input"
+      #   - name: MQTT_TOPIC_OUTPUT
+      #     value: "e2l/process/output"
+      #   - name: WINDOW_SIZE_HAMPEL
+      #     value: "600"
+      #   - name: WINDOW_SIZE
+      #     value: "60"
+      #   - name: SLIDE_INTERVAL
+      #     value: "60"
+      #   - name: N_SIGMA
+      #     value: "3.5"
+      #   - name: CORE_NUMBER
+      #     value: "*"
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: e2as-svc
+  namespace: edge2lora
+spec:
+  type: ClusterIP
+  selector:
+    app: e2as
+  ports:
+  - name: mqtt
+    port: 1883
+    targetPort: 1883
+  - name: dashboard-api
+    port: 18083
+    targetPort: 18083
+  - name: grpc
+    port: 50052
+    targetPort: 50052
+  - name: udp
+    port: 1680
+    targetPort: 1680
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: e2as-headless-svc
+  namespace: edge2lora
+spec:
+  clusterIP: None
+  selector:
+    app: e2as
+  ports:
+  - name: mqtt
+    port: 1883
+    targetPort: 1883
+  - name: dashboard-api
+    port: 18083
+    targetPort: 18083
+  - name: grpc
+    port: 50052
+    targetPort: 50052
+  - name: udp
+    port: 1680
+    targetPort: 1680
