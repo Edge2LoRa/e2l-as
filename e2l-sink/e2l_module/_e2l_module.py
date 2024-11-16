@@ -7,6 +7,7 @@ import psutil
 import grpc
 import random
 import pandas as pd
+import os
 from e2gw_rpc_client import (
     edge2gateway_pb2_grpc,
     EdPubInfo,
@@ -70,7 +71,7 @@ class E2LoRaModule:
     This class is handle the Edge2LoRa Protocol.
     """
 
-    def __init__(self, dashboard_rpc_endpoint, experiment_id):
+    def __init__(self, dashboard_rpc_endpoint, experiment_id, balancer):
         # Generate ephimeral ecc private/public key pair
         self.ephimeral_private_key = ECC.generate(curve="P-256")
         self.ephimeral_public_key = self.ephimeral_private_key.public_key()
@@ -90,9 +91,15 @@ class E2LoRaModule:
         self.e2gw_ids = []
         self.e2ed_ids = []
         self.ed_ids = []
-        self.simulation_dataframe = pd.read_csv("noisy_generated_data_lat_lon.csv")
-        self.snapshots_list = self.simulation_dataframe["snapshot"].unique()
+        
+        self.dataset_path = "./snapshot_random/"
+        self.simulation_dataframe_list = os.listdir(self.dataset_path)
+        self.simulation_dataframe_list.sort()
+
         self.current_snapshot_position = 0
+        self.gateways_dataframe = pd.read_csv("gw-roma-50.csv")
+        self.current_scenario = None
+        self.balancer = balancer
 
         self.legacy_not_duplicates = {}
         self.legacy_dropped = 0
@@ -430,14 +437,12 @@ class E2LoRaModule:
             gateway_list=[]
             )
         
-        
-
-
-        for gw_id in range(50):
-            print(gw_id)
+        for index,row in self.gateways_dataframe.iterrows():
 
             gateway = Gateway_info(
-                gw_id=str(gw_id),
+                gw_id=str(row["GW_ID"]),
+                lat=row["lat"],
+                lon=row["lon"],
                 rx_frame=random.randint(0, 10),
                 tx_frame=random.randint(0, 10),
                 memory=random.randint(0, 100),
@@ -457,7 +462,9 @@ class E2LoRaModule:
         devices_list = Device_info_list(
             device_list=[]
             )
-        temp_dataframe = self.simulation_dataframe[self.simulation_dataframe["snapshot"] == self.snapshots_list[self.current_snapshot_position]]
+        print("current dataframe is :",self.simulation_dataframe_list[self.current_snapshot_position])        
+        temp_dataframe = pd.read_csv(self.dataset_path + self.simulation_dataframe_list[self.current_snapshot_position])
+        temp_dataframe = temp_dataframe[temp_dataframe['framecounter']==1]
 
         for index, row in temp_dataframe.iterrows():
             device = Device_info(
@@ -470,7 +477,7 @@ class E2LoRaModule:
             devices_list.device_list.append(device)
 
         self.current_snapshot_position+=1
-        if self.current_snapshot_position == len(self.snapshots_list):
+        if self.current_snapshot_position == len(self.simulation_dataframe_list):
             self.current_snapshot_position = 0
 
         return devices_list
@@ -657,6 +664,19 @@ class E2LoRaModule:
             ed_1_gw_selection = response.ed_1_gw_selection
             ed_2_gw_selection = response.ed_2_gw_selection
             ed_3_gw_selection = response.ed_3_gw_selection
+            
+            if(response.scenario != self.current_scenario):
+                self.current_snapshot_position = 0
+                self.current_scenario = response.scenario
+                if self.current_scenario == "Moving cluster":
+                    self.dataset_path = "./snapshot_random/"
+                elif self.current_scenario == "Taxi simulation":
+                    self.dataset_path = "/Volumes/SSD 250/backup tesi/processing/snapshot_taxi/"
+                self.simulation_dataframe_list = os.listdir(self.dataset_path)
+                self.simulation_dataframe_list.sort()
+            self.balancer.assigning_algorithm = response.assining_policy
+
+
             self._update_params(ed_1_gw_selection, ed_2_gw_selection, ed_3_gw_selection)
             time.sleep(self.default_sleep_seconds)
 

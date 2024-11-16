@@ -10,6 +10,8 @@ from rpc_module import Edge2LoRaApplicationServer
 from mqtt_module import MQTTModule
 import json
 
+from load_balancer import E2LoraBalancer
+
 from e2l_module import (
     E2LoRaModule,
     DEFAULT_APP_PORT,
@@ -80,13 +82,15 @@ if __name__ == "__main__":
     #####################
     #   INIT E2L MODULE #
     #####################
+    balancer = E2LoraBalancer(experiment_id=experiment_id)
+    balancer.start_assignment_loop()
     dashboard_rpc_endpoint = None
     if experiment_id is None:
         dashboard_rpc_endpoint = (
             f'{os.getenv("DASHBOARD_RPC_HOST")}:{os.getenv("DASHBOARD_RPC_PORT")}'
         )
     e2l_module = E2LoRaModule(
-        dashboard_rpc_endpoint=dashboard_rpc_endpoint, experiment_id=experiment_id
+        dashboard_rpc_endpoint=dashboard_rpc_endpoint, experiment_id=experiment_id, balancer=balancer
     )
     e2l_module.start_dashboard_update_loop()
     e2l_module.start_resource_monitor_loop()
