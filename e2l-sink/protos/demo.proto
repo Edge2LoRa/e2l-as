@@ -71,9 +71,10 @@ message Gateway_info {
   double lon = 3;
   uint64 rx_frame = 4;
   uint64 tx_frame = 5;
-  float memory = 6;
-  float cpu = 7;
-  uint64 bandwidth_reduction = 8;
+  uint64 processed_frame = 6;
+  float memory = 7;
+  float cpu = 8;
+  uint64 bandwidth_reduction = 9;
 }
 
 message Gateway_info_list {
