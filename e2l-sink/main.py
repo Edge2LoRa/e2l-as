@@ -83,6 +83,11 @@ if __name__ == "__main__":
     #   INIT E2L MODULE #
     #####################
     balancer = E2LoraBalancer(experiment_id=experiment_id)
+    balancer.dataset = "/Volumes/SSD 250/backup tesi/processing/snapshot_random/"
+    snap_list = os.listdir(balancer.dataset)
+    snap_list.sort()
+    balancer.snapshot_file = snap_list[0]
+    
     balancer.start_assignment_loop()
     dashboard_rpc_endpoint = None
     if experiment_id is None:
