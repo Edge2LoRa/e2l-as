@@ -7,6 +7,29 @@ import os
 
 log = logging.getLogger(__name__)
 
+import math
+
+def haversine(lat1, lon1, lat2, lon2):
+    # Earth's radius in kilometers
+    R = 6371.0
+    
+    # Convert latitude and longitude from degrees to radians
+    lat1, lon1, lat2, lon2 = map(math.radians, [lat1, lon1, lat2, lon2])
+    
+    # Differences in coordinates
+    delta_lat = lat2 - lat1
+    delta_lon = lon2 - lon1
+    
+    # Haversine formula
+    a = math.sin(delta_lat / 2)**2 + math.cos(lat1) * math.cos(lat2) * math.sin(delta_lon / 2)**2
+    c = 2 * math.atan2(math.sqrt(a), math.sqrt(1 - a))
+    
+    # Distance in kilometers
+    distance = R * c
+    return distance
+
+
+
 class E2LoraBalancer():
     
     def __init__(self, experiment_id):
@@ -17,6 +40,7 @@ class E2LoraBalancer():
         self.update_counter = 0
         self.dataset = None
         self.snapshot_file = None
+        self.gateways_positions = pd.read_csv("./gw-roma-50.csv")
 
 
     def _random_assignment(self):
@@ -29,6 +53,22 @@ class E2LoraBalancer():
         return
 
     def _assign_on_proximity(self):
+        self.assignment_table = dict()
+        dataset_table = pd.read_csv(self.dataset+self.snapshot_file)
+        devices_list = dataset_table["NODE_ID"].unique()
+
+        lat_lon_table = dataset_table[["NODE_ID","lat","lon"]].groupby("NODE_ID").mean()
+
+        for device in devices_list:
+            best_gateway = 0
+            best_distance = 1000000
+            for index,row in self.gateways_positions.iterrows():
+                distance = haversine(lat_lon_table.loc[device]["lat"],lat_lon_table.loc[device]["lon"],row["lat"],row["lon"])
+                if distance < best_distance:
+                    best_distance = distance
+                    best_gateway = row['GW_ID']
+            self.assignment_table[device] = best_gateway
+        
         return 
 
     def _balanced_assignment(self):
@@ -53,7 +93,6 @@ class E2LoraBalancer():
                 print("Assigning...")
                 self.update_counter = 0
                 self._assingment_function()
-                print(self.assignment_table)
             time.sleep(2)
             
 

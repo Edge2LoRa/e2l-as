@@ -450,6 +450,7 @@ class E2LoRaModule:
                     lon=row["lon"],
                     rx_frame=0,
                     tx_frame=0,
+                    processed_frame=0,
                     memory=0,
                     cpu=0,
                 )
@@ -485,15 +486,19 @@ class E2LoRaModule:
                 sent_frames_per_dev[row['NODE_ID']] = sent_frames_per_dev[row['NODE_ID']] + 1
 
             for key, value in sent_frames_per_dev.items():
-                print(key)
                 try:
                     gw_processing = self.balancer.assignment_table[key]
                 except KeyError:
                     gw_processing = random.randint(0,49)
                 processed_frame_dict[gw_processing] = processed_frame_dict[gw_processing] + value
                 
+            mb_reception = 2
+            mb_transmission = 2
+            mb_processing = 5 
 
-            
+            cpu_reception = 0.05
+            cpu_transmission = 0.05
+            cpu_processing = 0.5
 
             for index,row in self.gateways_dataframe.iterrows():
                 gateway = Gateway_info(
@@ -502,8 +507,9 @@ class E2LoRaModule:
                     lon=row["lon"],
                     rx_frame=received_frames_dict[int(row["GW_ID"])],
                     tx_frame=int(processed_frame_dict[int(row["GW_ID"])]/self.process_window),
-                    memory=100,
-                    cpu=1000,
+                    processed_frame=processed_frame_dict[int(row["GW_ID"])],
+                    memory= int(((random.randint(236,276)+ received_frames_dict[int(row["GW_ID"])]*mb_reception + processed_frame_dict[int(row["GW_ID"])]*mb_processing + processed_frame_dict[int(row["GW_ID"])]*mb_transmission)/4096)*100),
+                    cpu=int(random.randint(7,12) + received_frames_dict[int(row["GW_ID"])]*cpu_reception + processed_frame_dict[int(row["GW_ID"])]*cpu_processing + processed_frame_dict[int(row["GW_ID"])]*cpu_transmission)
                 )
                 gateway_list.gateway_list.append(gateway)
             
