@@ -72,6 +72,23 @@ class E2LoraBalancer():
         return 
 
     def _balanced_assignment(self):
+        self.assignment_table = dict()
+        dataset_table = pd.read_csv(self.dataset+self.snapshot_file)
+        devices_list = dataset_table["NODE_ID"].unique()
+
+        lat_lon_table = dataset_table[["NODE_ID","lat","lon"]].groupby("NODE_ID").mean()
+
+        for device in devices_list:
+            gateway_distances = []
+            for index,row in self.gateways_positions.iterrows():
+                distance = haversine(lat_lon_table.loc[device]["lat"],lat_lon_table.loc[device]["lon"],row["lat"],row["lon"])
+                gateway_distances.append((row["GW_ID"],distance))
+            
+            gateway_distances.sort(key=lambda x: x[1])
+            random_nearest = random.randint(0,2)
+            self.assignment_table[device] = gateway_distances[random_nearest][0]
+            
+
         return
     
     

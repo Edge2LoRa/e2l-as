@@ -531,8 +531,9 @@ class E2LoRaModule:
             )
         print("current dataframe is :",self.simulation_dataframe_list[self.current_snapshot_position])        
         temp_dataframe = pd.read_csv(self.dataset_path + self.simulation_dataframe_list[self.current_snapshot_position])
-        temp_dataframe = temp_dataframe[temp_dataframe['framecounter']==1]
-
+        if self.current_scenario == "Taxi simulation":
+            temp_dataframe = temp_dataframe[temp_dataframe['framecounter']==1]
+        
 
         for index, row in temp_dataframe.iterrows():
             device = Device_info(
