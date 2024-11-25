@@ -75,6 +75,7 @@ message Gateway_info {
   float memory = 7;
   float cpu = 8;
   uint64 bandwidth_reduction = 9;
+  double coverage = 10;
 }
 
 message Gateway_info_list {

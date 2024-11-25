@@ -436,6 +436,8 @@ class E2LoRaModule:
 
     def _get_gw_stats(self):
 
+        self.balancer.snapshot_file = self.simulation_dataframe_list[self.current_snapshot_position]
+
         gateway_list = Gateway_info_list(
             gateway_list=[]
             )
@@ -453,6 +455,7 @@ class E2LoRaModule:
                     processed_frame=0,
                     memory=0,
                     cpu=0,
+                    coverage=row['coverage']
                 )
                 gateway_list.gateway_list.append(gateway)
             
@@ -509,12 +512,13 @@ class E2LoRaModule:
                     tx_frame=int(processed_frame_dict[int(row["GW_ID"])]/self.process_window),
                     processed_frame=processed_frame_dict[int(row["GW_ID"])],
                     memory= int(((random.randint(236,276)+ received_frames_dict[int(row["GW_ID"])]*mb_reception + processed_frame_dict[int(row["GW_ID"])]*mb_processing + processed_frame_dict[int(row["GW_ID"])]*mb_transmission)/4096)*100),
-                    cpu=int(random.randint(7,12) + received_frames_dict[int(row["GW_ID"])]*cpu_reception + processed_frame_dict[int(row["GW_ID"])]*cpu_processing + processed_frame_dict[int(row["GW_ID"])]*cpu_transmission)
+                    cpu=int(random.randint(7,12) + received_frames_dict[int(row["GW_ID"])]*cpu_reception + processed_frame_dict[int(row["GW_ID"])]*cpu_processing + processed_frame_dict[int(row["GW_ID"])]*cpu_transmission),
+                    coverage=row['coverage']
                 )
                 gateway_list.gateway_list.append(gateway)
             
             self.balancer.update_counter += 1
-            self.balancer.snapshot_file = self.simulation_dataframe_list[self.current_snapshot_position]
+
 
         
         return gateway_list
