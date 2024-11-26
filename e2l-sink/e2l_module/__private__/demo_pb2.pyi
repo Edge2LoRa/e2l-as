@@ -46,18 +46,20 @@ class SendStatistics(_message.Message):
     def __init__(self, client_id: _Optional[int] = ..., message_data: _Optional[str] = ..., gw_1_received_frame_num: _Optional[int] = ..., gw_1_transmitted_frame_num: _Optional[int] = ..., gw_2_received_frame_num: _Optional[int] = ..., gw_2_transmitted_frame_num: _Optional[int] = ..., ns_received_frame_frame_num: _Optional[int] = ..., ns_transmitted_frame_frame_num: _Optional[int] = ..., module_received_frame_frame_num: _Optional[int] = ..., aggregation_function_result: _Optional[int] = ...) -> None: ...
 
 class Device_info(_message.Message):
-    __slots__ = ("dev_id", "lat", "lon", "temperature", "humidity")
+    __slots__ = ("dev_id", "lat", "lon", "temperature", "humidity", "assigned_gw")
     DEV_ID_FIELD_NUMBER: _ClassVar[int]
     LAT_FIELD_NUMBER: _ClassVar[int]
     LON_FIELD_NUMBER: _ClassVar[int]
     TEMPERATURE_FIELD_NUMBER: _ClassVar[int]
     HUMIDITY_FIELD_NUMBER: _ClassVar[int]
+    ASSIGNED_GW_FIELD_NUMBER: _ClassVar[int]
     dev_id: str
     lat: float
     lon: float
     temperature: float
     humidity: float
-    def __init__(self, dev_id: _Optional[str] = ..., lat: _Optional[float] = ..., lon: _Optional[float] = ..., temperature: _Optional[float] = ..., humidity: _Optional[float] = ...) -> None: ...
+    assigned_gw: int
+    def __init__(self, dev_id: _Optional[str] = ..., lat: _Optional[float] = ..., lon: _Optional[float] = ..., temperature: _Optional[float] = ..., humidity: _Optional[float] = ..., assigned_gw: _Optional[int] = ...) -> None: ...
 
 class Device_info_list(_message.Message):
     __slots__ = ("device_list",)

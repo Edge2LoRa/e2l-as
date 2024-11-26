@@ -24,7 +24,7 @@ _sym_db = _symbol_database.Default()
 
 
 
-DESCRIPTOR = _descriptor_pool.Default().AddSerializedFile(b'\n\ndemo.proto\x12\x04\x64\x65mo\"2\n\x07Request\x12\x11\n\tclient_id\x18\x01 \x01(\x03\x12\x14\n\x0crequest_data\x18\x02 \x01(\t\"4\n\x08Response\x12\x11\n\tserver_id\x18\x01 \x01(\x03\x12\x15\n\rresponse_data\x18\x02 \x01(\t\"\xde\x02\n\x0eSendStatistics\x12\x11\n\tclient_id\x18\x01 \x01(\x03\x12\x14\n\x0cmessage_data\x18\x02 \x01(\t\x12\x1f\n\x17gw_1_received_frame_num\x18\x03 \x01(\x03\x12\"\n\x1agw_1_transmitted_frame_num\x18\x04 \x01(\x03\x12\x1f\n\x17gw_2_received_frame_num\x18\x05 \x01(\x03\x12\"\n\x1agw_2_transmitted_frame_num\x18\x06 \x01(\x03\x12#\n\x1bns_received_frame_frame_num\x18\x07 \x01(\x03\x12&\n\x1ens_transmitted_frame_frame_num\x18\x08 \x01(\x03\x12\'\n\x1fmodule_received_frame_frame_num\x18\t \x01(\x03\x12#\n\x1b\x61ggregation_function_result\x18\n \x01(\x03\"^\n\x0b\x44\x65vice_info\x12\x0e\n\x06\x64\x65v_id\x18\x01 \x01(\t\x12\x0b\n\x03lat\x18\x02 \x01(\x01\x12\x0b\n\x03lon\x18\x03 \x01(\x01\x12\x13\n\x0btemperature\x18\x04 \x01(\x02\x12\x10\n\x08humidity\x18\x05 \x01(\x02\":\n\x10\x44\x65vice_info_list\x12&\n\x0b\x64\x65vice_list\x18\x01 \x03(\x0b\x32\x11.demo.Device_info\"\xc0\x01\n\x0cGateway_info\x12\r\n\x05gw_id\x18\x01 \x01(\t\x12\x0b\n\x03lat\x18\x02 \x01(\x01\x12\x0b\n\x03lon\x18\x03 \x01(\x01\x12\x10\n\x08rx_frame\x18\x04 \x01(\x04\x12\x10\n\x08tx_frame\x18\x05 \x01(\x04\x12\x17\n\x0fprocessed_frame\x18\x06 \x01(\x04\x12\x0e\n\x06memory\x18\x07 \x01(\x02\x12\x0b\n\x03\x63pu\x18\x08 \x01(\x02\x12\x1b\n\x13\x62\x61ndwidth_reduction\x18\t \x01(\x04\x12\x10\n\x08\x63overage\x18\n \x01(\x01\"=\n\x11Gateway_info_list\x12(\n\x0cgateway_list\x18\x01 \x03(\x0b\x32\x12.demo.Gateway_info\";\n\x0fReplyInfoGwList\x12\x11\n\tserver_id\x18\x01 \x01(\x03\x12\x15\n\rresponse_data\x18\x02 \x01(\t\"<\n\x10ReplyInfoDevList\x12\x11\n\tserver_id\x18\x01 \x01(\x03\x12\x15\n\rresponse_data\x18\x02 \x01(\t\"\xd6\x02\n\x0fReplyStatistics\x12\x11\n\tserver_id\x18\x01 \x01(\x03\x12\x15\n\rresponse_data\x18\x02 \x01(\t\x12\x19\n\x11\x65\x64_1_gw_selection\x18\x03 \x01(\x03\x12\x19\n\x11\x65\x64_2_gw_selection\x18\x04 \x01(\x03\x12\x19\n\x11\x65\x64_3_gw_selection\x18\x05 \x01(\x03\x12#\n\x1bstart_key_agreement_process\x18\x06 \x01(\x03\x12\x18\n\x10process_function\x18\x07 \x01(\t\x12\x16\n\x0eprocess_window\x18\x08 \x01(\x03\x12\'\n\x1f\x63hange_processing_configuraiton\x18\t \x01(\x03\x12\x10\n\x08scenario\x18\n \x01(\t\x12\x17\n\x0f\x61ssining_policy\x18\x0b \x01(\t\x12\x1d\n\x15refreshing_table_rate\x18\x0c \x01(\x03\"\xab\x01\n\x0eSendLogMessage\x12\x11\n\tclient_id\x18\x01 \x01(\x03\x12\x14\n\x0cmessage_data\x18\x02 \x01(\t\x12)\n!key_agreement_log_message_node_id\x18\x03 \x01(\x03\x12!\n\x19key_agreement_message_log\x18\x04 \x01(\t\x12\"\n\x1akey_agreement_process_time\x18\x05 \x01(\x03\";\n\x0fReplyLogMessage\x12\x11\n\tserver_id\x18\x01 \x01(\x03\x12\x15\n\rresponse_data\x18\x02 \x01(\t\"^\n\x15SendJoinUpdateMessage\x12\x11\n\tclient_id\x18\x01 \x01(\x03\x12\x14\n\x0cmessage_data\x18\x02 \x01(\t\x12\r\n\x05\x65\x64_id\x18\x03 \x01(\x03\x12\r\n\x05gw_id\x18\x04 \x01(\x03\"B\n\x16ReplyJoinUpdateMessage\x12\x11\n\tserver_id\x18\x01 \x01(\x03\x12\x15\n\rresponse_data\x18\x02 \x01(\t\"~\n\tSendLogED\x12\x11\n\tclient_id\x18\x01 \x01(\x03\x12\x14\n\x0cmessage_data\x18\x02 \x01(\t\x12$\n\x1c\x65\x64_key_agreement_message_log\x18\x03 \x01(\t\x12\"\n\x1akey_agreement_process_time\x18\x04 \x01(\x03\"6\n\nReplyLogED\x12\x11\n\tserver_id\x18\x01 \x01(\x03\x12\x15\n\rresponse_data\x18\x02 \x01(\t\"|\n\tSendLogGW\x12\x11\n\tclient_id\x18\x01 \x01(\x03\x12\x14\n\x0cmessage_data\x18\x02 \x01(\t\x12\"\n\x1agw_1_agreement_message_log\x18\x03 \x01(\t\x12\"\n\x1akey_agreement_process_time\x18\x04 \x01(\x03\"6\n\nReplyLogGW\x12\x11\n\tserver_id\x18\x01 \x01(\x03\x12\x15\n\rresponse_data\x18\x02 \x01(\t\"\x82\x01\n\tSendLogDM\x12\x11\n\tclient_id\x18\x01 \x01(\x03\x12\x14\n\x0cmessage_data\x18\x02 \x01(\t\x12(\n module_key_agreement_message_log\x18\x03 \x01(\t\x12\"\n\x1akey_agreement_process_time\x18\x04 \x01(\x03\"6\n\nReplyLogDM\x12\x11\n\tserver_id\x18\x01 \x01(\x03\x12\x15\n\rresponse_data\x18\x02 \x01(\t2\x94\x08\n\x08GRPCDemo\x12-\n\x0cSimpleMethod\x12\r.demo.Request\x1a\x0e.demo.Response\x12\x38\n\x15\x43lientStreamingMethod\x12\r.demo.Request\x1a\x0e.demo.Response(\x01\x12\x38\n\x15ServerStreamingMethod\x12\r.demo.Request\x1a\x0e.demo.Response0\x01\x12\x41\n\x1c\x42idirectionalStreamingMethod\x12\r.demo.Request\x1a\x0e.demo.Response(\x01\x30\x01\x12\x46\n\x17SimpleMethodsStatistics\x12\x14.demo.SendStatistics\x1a\x15.demo.ReplyStatistics\x12P\n\x1f\x43lientStreamingMethodStatistics\x12\x14.demo.SendStatistics\x1a\x15.demo.ReplyStatistics(\x01\x12P\n\x1fServerStreamingMethodStatistics\x12\x14.demo.SendStatistics\x1a\x15.demo.ReplyStatistics0\x01\x12Y\n&BidirectionalStreamingMethodStatistics\x12\x14.demo.SendStatistics\x1a\x15.demo.ReplyStatistics(\x01\x30\x01\x12[\n\x1eSimpleMethodsJoinUpdateMessage\x12\x1b.demo.SendJoinUpdateMessage\x1a\x1c.demo.ReplyJoinUpdateMessage\x12\x46\n\x17SimpleMethodsLogMessage\x12\x14.demo.SendLogMessage\x1a\x15.demo.ReplyLogMessage\x12\x37\n\x12SimpleMethodsLogED\x12\x0f.demo.SendLogED\x1a\x10.demo.ReplyLogED\x12\x37\n\x12SimpleMethodsLogGW\x12\x0f.demo.SendLogGW\x1a\x10.demo.ReplyLogGW\x12\x37\n\x12SimpleMethodsLogDM\x12\x0f.demo.SendLogDM\x1a\x10.demo.ReplyLogDM\x12\x44\n\x12SimpleMethodGWInfo\x12\x17.demo.Gateway_info_list\x1a\x15.demo.ReplyInfoGwList\x12\x45\n\x13SimpleMethodDevInfo\x12\x16.demo.Device_info_list\x1a\x16.demo.ReplyInfoDevListb\x06proto3')
+DESCRIPTOR = _descriptor_pool.Default().AddSerializedFile(b'\n\ndemo.proto\x12\x04\x64\x65mo\"2\n\x07Request\x12\x11\n\tclient_id\x18\x01 \x01(\x03\x12\x14\n\x0crequest_data\x18\x02 \x01(\t\"4\n\x08Response\x12\x11\n\tserver_id\x18\x01 \x01(\x03\x12\x15\n\rresponse_data\x18\x02 \x01(\t\"\xde\x02\n\x0eSendStatistics\x12\x11\n\tclient_id\x18\x01 \x01(\x03\x12\x14\n\x0cmessage_data\x18\x02 \x01(\t\x12\x1f\n\x17gw_1_received_frame_num\x18\x03 \x01(\x03\x12\"\n\x1agw_1_transmitted_frame_num\x18\x04 \x01(\x03\x12\x1f\n\x17gw_2_received_frame_num\x18\x05 \x01(\x03\x12\"\n\x1agw_2_transmitted_frame_num\x18\x06 \x01(\x03\x12#\n\x1bns_received_frame_frame_num\x18\x07 \x01(\x03\x12&\n\x1ens_transmitted_frame_frame_num\x18\x08 \x01(\x03\x12\'\n\x1fmodule_received_frame_frame_num\x18\t \x01(\x03\x12#\n\x1b\x61ggregation_function_result\x18\n \x01(\x03\"s\n\x0b\x44\x65vice_info\x12\x0e\n\x06\x64\x65v_id\x18\x01 \x01(\t\x12\x0b\n\x03lat\x18\x02 \x01(\x01\x12\x0b\n\x03lon\x18\x03 \x01(\x01\x12\x13\n\x0btemperature\x18\x04 \x01(\x02\x12\x10\n\x08humidity\x18\x05 \x01(\x02\x12\x13\n\x0b\x61ssigned_gw\x18\x06 \x01(\r\":\n\x10\x44\x65vice_info_list\x12&\n\x0b\x64\x65vice_list\x18\x01 \x03(\x0b\x32\x11.demo.Device_info\"\xc0\x01\n\x0cGateway_info\x12\r\n\x05gw_id\x18\x01 \x01(\t\x12\x0b\n\x03lat\x18\x02 \x01(\x01\x12\x0b\n\x03lon\x18\x03 \x01(\x01\x12\x10\n\x08rx_frame\x18\x04 \x01(\x04\x12\x10\n\x08tx_frame\x18\x05 \x01(\x04\x12\x17\n\x0fprocessed_frame\x18\x06 \x01(\x04\x12\x0e\n\x06memory\x18\x07 \x01(\x02\x12\x0b\n\x03\x63pu\x18\x08 \x01(\x02\x12\x1b\n\x13\x62\x61ndwidth_reduction\x18\t \x01(\x04\x12\x10\n\x08\x63overage\x18\n \x01(\x01\"=\n\x11Gateway_info_list\x12(\n\x0cgateway_list\x18\x01 \x03(\x0b\x32\x12.demo.Gateway_info\";\n\x0fReplyInfoGwList\x12\x11\n\tserver_id\x18\x01 \x01(\x03\x12\x15\n\rresponse_data\x18\x02 \x01(\t\"<\n\x10ReplyInfoDevList\x12\x11\n\tserver_id\x18\x01 \x01(\x03\x12\x15\n\rresponse_data\x18\x02 \x01(\t\"\xd6\x02\n\x0fReplyStatistics\x12\x11\n\tserver_id\x18\x01 \x01(\x03\x12\x15\n\rresponse_data\x18\x02 \x01(\t\x12\x19\n\x11\x65\x64_1_gw_selection\x18\x03 \x01(\x03\x12\x19\n\x11\x65\x64_2_gw_selection\x18\x04 \x01(\x03\x12\x19\n\x11\x65\x64_3_gw_selection\x18\x05 \x01(\x03\x12#\n\x1bstart_key_agreement_process\x18\x06 \x01(\x03\x12\x18\n\x10process_function\x18\x07 \x01(\t\x12\x16\n\x0eprocess_window\x18\x08 \x01(\x03\x12\'\n\x1f\x63hange_processing_configuraiton\x18\t \x01(\x03\x12\x10\n\x08scenario\x18\n \x01(\t\x12\x17\n\x0f\x61ssining_policy\x18\x0b \x01(\t\x12\x1d\n\x15refreshing_table_rate\x18\x0c \x01(\x03\"\xab\x01\n\x0eSendLogMessage\x12\x11\n\tclient_id\x18\x01 \x01(\x03\x12\x14\n\x0cmessage_data\x18\x02 \x01(\t\x12)\n!key_agreement_log_message_node_id\x18\x03 \x01(\x03\x12!\n\x19key_agreement_message_log\x18\x04 \x01(\t\x12\"\n\x1akey_agreement_process_time\x18\x05 \x01(\x03\";\n\x0fReplyLogMessage\x12\x11\n\tserver_id\x18\x01 \x01(\x03\x12\x15\n\rresponse_data\x18\x02 \x01(\t\"^\n\x15SendJoinUpdateMessage\x12\x11\n\tclient_id\x18\x01 \x01(\x03\x12\x14\n\x0cmessage_data\x18\x02 \x01(\t\x12\r\n\x05\x65\x64_id\x18\x03 \x01(\x03\x12\r\n\x05gw_id\x18\x04 \x01(\x03\"B\n\x16ReplyJoinUpdateMessage\x12\x11\n\tserver_id\x18\x01 \x01(\x03\x12\x15\n\rresponse_data\x18\x02 \x01(\t\"~\n\tSendLogED\x12\x11\n\tclient_id\x18\x01 \x01(\x03\x12\x14\n\x0cmessage_data\x18\x02 \x01(\t\x12$\n\x1c\x65\x64_key_agreement_message_log\x18\x03 \x01(\t\x12\"\n\x1akey_agreement_process_time\x18\x04 \x01(\x03\"6\n\nReplyLogED\x12\x11\n\tserver_id\x18\x01 \x01(\x03\x12\x15\n\rresponse_data\x18\x02 \x01(\t\"|\n\tSendLogGW\x12\x11\n\tclient_id\x18\x01 \x01(\x03\x12\x14\n\x0cmessage_data\x18\x02 \x01(\t\x12\"\n\x1agw_1_agreement_message_log\x18\x03 \x01(\t\x12\"\n\x1akey_agreement_process_time\x18\x04 \x01(\x03\"6\n\nReplyLogGW\x12\x11\n\tserver_id\x18\x01 \x01(\x03\x12\x15\n\rresponse_data\x18\x02 \x01(\t\"\x82\x01\n\tSendLogDM\x12\x11\n\tclient_id\x18\x01 \x01(\x03\x12\x14\n\x0cmessage_data\x18\x02 \x01(\t\x12(\n module_key_agreement_message_log\x18\x03 \x01(\t\x12\"\n\x1akey_agreement_process_time\x18\x04 \x01(\x03\"6\n\nReplyLogDM\x12\x11\n\tserver_id\x18\x01 \x01(\x03\x12\x15\n\rresponse_data\x18\x02 \x01(\t2\x94\x08\n\x08GRPCDemo\x12-\n\x0cSimpleMethod\x12\r.demo.Request\x1a\x0e.demo.Response\x12\x38\n\x15\x43lientStreamingMethod\x12\r.demo.Request\x1a\x0e.demo.Response(\x01\x12\x38\n\x15ServerStreamingMethod\x12\r.demo.Request\x1a\x0e.demo.Response0\x01\x12\x41\n\x1c\x42idirectionalStreamingMethod\x12\r.demo.Request\x1a\x0e.demo.Response(\x01\x30\x01\x12\x46\n\x17SimpleMethodsStatistics\x12\x14.demo.SendStatistics\x1a\x15.demo.ReplyStatistics\x12P\n\x1f\x43lientStreamingMethodStatistics\x12\x14.demo.SendStatistics\x1a\x15.demo.ReplyStatistics(\x01\x12P\n\x1fServerStreamingMethodStatistics\x12\x14.demo.SendStatistics\x1a\x15.demo.ReplyStatistics0\x01\x12Y\n&BidirectionalStreamingMethodStatistics\x12\x14.demo.SendStatistics\x1a\x15.demo.ReplyStatistics(\x01\x30\x01\x12[\n\x1eSimpleMethodsJoinUpdateMessage\x12\x1b.demo.SendJoinUpdateMessage\x1a\x1c.demo.ReplyJoinUpdateMessage\x12\x46\n\x17SimpleMethodsLogMessage\x12\x14.demo.SendLogMessage\x1a\x15.demo.ReplyLogMessage\x12\x37\n\x12SimpleMethodsLogED\x12\x0f.demo.SendLogED\x1a\x10.demo.ReplyLogED\x12\x37\n\x12SimpleMethodsLogGW\x12\x0f.demo.SendLogGW\x1a\x10.demo.ReplyLogGW\x12\x37\n\x12SimpleMethodsLogDM\x12\x0f.demo.SendLogDM\x1a\x10.demo.ReplyLogDM\x12\x44\n\x12SimpleMethodGWInfo\x12\x17.demo.Gateway_info_list\x1a\x15.demo.ReplyInfoGwList\x12\x45\n\x13SimpleMethodDevInfo\x12\x16.demo.Device_info_list\x1a\x16.demo.ReplyInfoDevListb\x06proto3')
 
 _globals = globals()
 _builder.BuildMessageAndEnumDescriptors(DESCRIPTOR, _globals)
@@ -38,39 +38,39 @@ if not _descriptor._USE_C_DESCRIPTORS:
   _globals['_SENDSTATISTICS']._serialized_start=127
   _globals['_SENDSTATISTICS']._serialized_end=477
   _globals['_DEVICE_INFO']._serialized_start=479
-  _globals['_DEVICE_INFO']._serialized_end=573
-  _globals['_DEVICE_INFO_LIST']._serialized_start=575
-  _globals['_DEVICE_INFO_LIST']._serialized_end=633
-  _globals['_GATEWAY_INFO']._serialized_start=636
-  _globals['_GATEWAY_INFO']._serialized_end=828
-  _globals['_GATEWAY_INFO_LIST']._serialized_start=830
-  _globals['_GATEWAY_INFO_LIST']._serialized_end=891
-  _globals['_REPLYINFOGWLIST']._serialized_start=893
-  _globals['_REPLYINFOGWLIST']._serialized_end=952
-  _globals['_REPLYINFODEVLIST']._serialized_start=954
-  _globals['_REPLYINFODEVLIST']._serialized_end=1014
-  _globals['_REPLYSTATISTICS']._serialized_start=1017
-  _globals['_REPLYSTATISTICS']._serialized_end=1359
-  _globals['_SENDLOGMESSAGE']._serialized_start=1362
-  _globals['_SENDLOGMESSAGE']._serialized_end=1533
-  _globals['_REPLYLOGMESSAGE']._serialized_start=1535
-  _globals['_REPLYLOGMESSAGE']._serialized_end=1594
-  _globals['_SENDJOINUPDATEMESSAGE']._serialized_start=1596
-  _globals['_SENDJOINUPDATEMESSAGE']._serialized_end=1690
-  _globals['_REPLYJOINUPDATEMESSAGE']._serialized_start=1692
-  _globals['_REPLYJOINUPDATEMESSAGE']._serialized_end=1758
-  _globals['_SENDLOGED']._serialized_start=1760
-  _globals['_SENDLOGED']._serialized_end=1886
-  _globals['_REPLYLOGED']._serialized_start=1888
-  _globals['_REPLYLOGED']._serialized_end=1942
-  _globals['_SENDLOGGW']._serialized_start=1944
-  _globals['_SENDLOGGW']._serialized_end=2068
-  _globals['_REPLYLOGGW']._serialized_start=2070
-  _globals['_REPLYLOGGW']._serialized_end=2124
-  _globals['_SENDLOGDM']._serialized_start=2127
-  _globals['_SENDLOGDM']._serialized_end=2257
-  _globals['_REPLYLOGDM']._serialized_start=2259
-  _globals['_REPLYLOGDM']._serialized_end=2313
-  _globals['_GRPCDEMO']._serialized_start=2316
-  _globals['_GRPCDEMO']._serialized_end=3360
+  _globals['_DEVICE_INFO']._serialized_end=594
+  _globals['_DEVICE_INFO_LIST']._serialized_start=596
+  _globals['_DEVICE_INFO_LIST']._serialized_end=654
+  _globals['_GATEWAY_INFO']._serialized_start=657
+  _globals['_GATEWAY_INFO']._serialized_end=849
+  _globals['_GATEWAY_INFO_LIST']._serialized_start=851
+  _globals['_GATEWAY_INFO_LIST']._serialized_end=912
+  _globals['_REPLYINFOGWLIST']._serialized_start=914
+  _globals['_REPLYINFOGWLIST']._serialized_end=973
+  _globals['_REPLYINFODEVLIST']._serialized_start=975
+  _globals['_REPLYINFODEVLIST']._serialized_end=1035
+  _globals['_REPLYSTATISTICS']._serialized_start=1038
+  _globals['_REPLYSTATISTICS']._serialized_end=1380
+  _globals['_SENDLOGMESSAGE']._serialized_start=1383
+  _globals['_SENDLOGMESSAGE']._serialized_end=1554
+  _globals['_REPLYLOGMESSAGE']._serialized_start=1556
+  _globals['_REPLYLOGMESSAGE']._serialized_end=1615
+  _globals['_SENDJOINUPDATEMESSAGE']._serialized_start=1617
+  _globals['_SENDJOINUPDATEMESSAGE']._serialized_end=1711
+  _globals['_REPLYJOINUPDATEMESSAGE']._serialized_start=1713
+  _globals['_REPLYJOINUPDATEMESSAGE']._serialized_end=1779
+  _globals['_SENDLOGED']._serialized_start=1781
+  _globals['_SENDLOGED']._serialized_end=1907
+  _globals['_REPLYLOGED']._serialized_start=1909
+  _globals['_REPLYLOGED']._serialized_end=1963
+  _globals['_SENDLOGGW']._serialized_start=1965
+  _globals['_SENDLOGGW']._serialized_end=2089
+  _globals['_REPLYLOGGW']._serialized_start=2091
+  _globals['_REPLYLOGGW']._serialized_end=2145
+  _globals['_SENDLOGDM']._serialized_start=2148
+  _globals['_SENDLOGDM']._serialized_end=2278
+  _globals['_REPLYLOGDM']._serialized_start=2280
+  _globals['_REPLYLOGDM']._serialized_end=2334
+  _globals['_GRPCDEMO']._serialized_start=2337
+  _globals['_GRPCDEMO']._serialized_end=3381
 # @@protoc_insertion_point(module_scope)

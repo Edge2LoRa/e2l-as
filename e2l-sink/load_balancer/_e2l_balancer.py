@@ -40,6 +40,7 @@ class E2LoraBalancer():
         self.update_counter = 0
         self.dataset = None
         self.snapshot_file = None
+        self.lock_assignment = Lock()
         self.gateways_positions = pd.read_csv("./gw-roma-50.csv")
 
 
@@ -67,7 +68,7 @@ class E2LoraBalancer():
                 if distance < best_distance:
                     best_distance = distance
                     best_gateway = row['GW_ID']
-            self.assignment_table[device] = best_gateway
+            self.assignment_table[device] = int(best_gateway)
         
         return 
 
@@ -86,7 +87,7 @@ class E2LoraBalancer():
             
             gateway_distances.sort(key=lambda x: x[1])
             random_nearest = random.randint(0,2)
-            self.assignment_table[device] = gateway_distances[random_nearest][0]
+            self.assignment_table[device] = int(gateway_distances[random_nearest][0])
             
 
         return
@@ -109,8 +110,9 @@ class E2LoraBalancer():
             if self.update_counter >= self.refresh_interval:
                 print("Assigning...")
                 self.update_counter = 0
+                self.lock_assignment.acquire()
                 self._assingment_function()
-            time.sleep(2)
+                self.lock_assignment.release()
             
 
 

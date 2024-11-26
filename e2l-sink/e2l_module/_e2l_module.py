@@ -435,9 +435,9 @@ class E2LoRaModule:
     """
 
     def _get_gw_stats(self):
-
+        
         self.balancer.snapshot_file = self.simulation_dataframe_list[self.current_snapshot_position]
-
+        print(f"For balancing using dataframe: {self.balancer.snapshot_file}")
         gateway_list = Gateway_info_list(
             gateway_list=[]
             )
@@ -520,6 +520,7 @@ class E2LoRaModule:
             self.balancer.update_counter += 1
 
 
+
         
         return gateway_list
 
@@ -537,17 +538,29 @@ class E2LoRaModule:
         temp_dataframe = pd.read_csv(self.dataset_path + self.simulation_dataframe_list[self.current_snapshot_position])
         if self.current_scenario == "Taxi simulation":
             temp_dataframe = temp_dataframe[temp_dataframe['framecounter']==1]
-        
-
-        for index, row in temp_dataframe.iterrows():
-            device = Device_info(
-                dev_id=str(row["NODE_ID"]),
-                lat=row["lat"],
-                lon=row["lon"],
-                temperature=0,
-                humidity=0
-            )
-            devices_list.device_list.append(device)
+        print(self.balancer.assignment_table)
+        if self.balancer.assignment_table == {}:
+            
+            for index, row in temp_dataframe.iterrows():
+                device = Device_info(
+                    dev_id=str(row["NODE_ID"]),
+                    lat=row["lat"],
+                    lon=row["lon"],
+                    temperature=0,
+                    humidity=0
+                )
+                devices_list.device_list.append(device)
+        else:
+            for index, row in temp_dataframe.iterrows():
+                device = Device_info(
+                    dev_id=str(row["NODE_ID"]),
+                    lat=row["lat"],
+                    lon=row["lon"],
+                    temperature=0,
+                    humidity=0,
+                    assigned_gw=self.balancer.assignment_table[row["NODE_ID"]]
+                )
+                devices_list.device_list.append(device)
 
         self.current_snapshot_position+=1
         if self.current_snapshot_position == len(self.simulation_dataframe_list):
@@ -727,11 +740,13 @@ class E2LoRaModule:
 
             log.debug(f"Sending current statistics of gateways to dashboard")
 
+            _response = self.dashboard_rpc_stub.SimpleMethodGWInfo(self._get_gw_stats())
+            log.debug(f"Received from dashboard response:\n{_response}")
+            self.balancer.lock_assignment.acquire()
+            self.balancer.lock_assignment.release()
             _response = self.dashboard_rpc_stub.SimpleMethodDevInfo(self._get_dev_stats())
             log.debug(f"Received from dashboard response:\n{_response}")
 
-            _response = self.dashboard_rpc_stub.SimpleMethodGWInfo(self._get_gw_stats())
-            log.debug(f"Received from dashboard response:\n{_response}")
 
             log.debug(f"Received commands from dashboard:\n{response}")
             ed_1_gw_selection = response.ed_1_gw_selection
@@ -739,6 +754,7 @@ class E2LoRaModule:
             ed_3_gw_selection = response.ed_3_gw_selection
             
             if(response.scenario != self.current_scenario):
+                self.balancer.assignment_table = {}
                 self.current_snapshot_position = 0
                 self.current_scenario = response.scenario
                 if self.current_scenario == "Moving cluster":

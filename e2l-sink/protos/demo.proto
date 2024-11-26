@@ -59,6 +59,7 @@ message Device_info {
   double lon = 3;
   float temperature = 4;
   float humidity = 5;
+  uint32 assigned_gw = 6; 
 }
 
 message Device_info_list {
