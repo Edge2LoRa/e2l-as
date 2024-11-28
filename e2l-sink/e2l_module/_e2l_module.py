@@ -452,6 +452,7 @@ class E2LoRaModule:
                     lon=row["lon"],
                     rx_frame=0,
                     tx_frame=0,
+                    fwd_frames=0,
                     processed_frame=0,
                     memory=0,
                     cpu=0,
@@ -504,12 +505,18 @@ class E2LoRaModule:
             cpu_processing = 0.5
 
             for index,row in self.gateways_dataframe.iterrows():
+                received = received_frames_dict[int(row["GW_ID"])]
+                processed = processed_frame_dict[int(row["GW_ID"])]
+                forwarded = 0
+                if (received - processed) > 0:
+                    forwarded = received - processed
                 gateway = Gateway_info(
                     gw_id=str(row["GW_ID"]),
                     lat=row["lat"],
                     lon=row["lon"],
                     rx_frame=received_frames_dict[int(row["GW_ID"])],
                     tx_frame=int(processed_frame_dict[int(row["GW_ID"])]/self.process_window),
+                    fwd_frames=forwarded,
                     processed_frame=processed_frame_dict[int(row["GW_ID"])],
                     memory= int(((random.randint(236,276)+ received_frames_dict[int(row["GW_ID"])]*mb_reception + processed_frame_dict[int(row["GW_ID"])]*mb_processing + processed_frame_dict[int(row["GW_ID"])]*mb_transmission)/4096)*100),
                     cpu=int(random.randint(7,12) + received_frames_dict[int(row["GW_ID"])]*cpu_reception + processed_frame_dict[int(row["GW_ID"])]*cpu_processing + processed_frame_dict[int(row["GW_ID"])]*cpu_transmission),
@@ -752,6 +759,9 @@ class E2LoRaModule:
             ed_1_gw_selection = response.ed_1_gw_selection
             ed_2_gw_selection = response.ed_2_gw_selection
             ed_3_gw_selection = response.ed_3_gw_selection
+
+            print("received sleep time equals to: ",response.refresh_rate)
+            self.default_sleep_seconds=response.refresh_rate
             
             if(response.scenario != self.current_scenario):
                 self.balancer.assignment_table = {}

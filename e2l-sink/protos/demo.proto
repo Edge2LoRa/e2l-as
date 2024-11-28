@@ -77,6 +77,7 @@ message Gateway_info {
   float cpu = 8;
   uint64 bandwidth_reduction = 9;
   double coverage = 10;
+  uint64 fwd_frames = 11;
 }
 
 message Gateway_info_list {
@@ -106,6 +107,7 @@ message ReplyStatistics {
     string scenario = 10;
     string assining_policy = 11;
     int64 refreshing_table_rate = 12;
+    uint32 refresh_rate = 13;
     
 }
 

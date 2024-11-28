@@ -68,7 +68,7 @@ class Device_info_list(_message.Message):
     def __init__(self, device_list: _Optional[_Iterable[_Union[Device_info, _Mapping]]] = ...) -> None: ...
 
 class Gateway_info(_message.Message):
-    __slots__ = ("gw_id", "lat", "lon", "rx_frame", "tx_frame", "processed_frame", "memory", "cpu", "bandwidth_reduction", "coverage")
+    __slots__ = ("gw_id", "lat", "lon", "rx_frame", "tx_frame", "processed_frame", "memory", "cpu", "bandwidth_reduction", "coverage", "fwd_frames")
     GW_ID_FIELD_NUMBER: _ClassVar[int]
     LAT_FIELD_NUMBER: _ClassVar[int]
     LON_FIELD_NUMBER: _ClassVar[int]
@@ -79,6 +79,7 @@ class Gateway_info(_message.Message):
     CPU_FIELD_NUMBER: _ClassVar[int]
     BANDWIDTH_REDUCTION_FIELD_NUMBER: _ClassVar[int]
     COVERAGE_FIELD_NUMBER: _ClassVar[int]
+    FWD_FRAMES_FIELD_NUMBER: _ClassVar[int]
     gw_id: str
     lat: float
     lon: float
@@ -89,7 +90,8 @@ class Gateway_info(_message.Message):
     cpu: float
     bandwidth_reduction: int
     coverage: float
-    def __init__(self, gw_id: _Optional[str] = ..., lat: _Optional[float] = ..., lon: _Optional[float] = ..., rx_frame: _Optional[int] = ..., tx_frame: _Optional[int] = ..., processed_frame: _Optional[int] = ..., memory: _Optional[float] = ..., cpu: _Optional[float] = ..., bandwidth_reduction: _Optional[int] = ..., coverage: _Optional[float] = ...) -> None: ...
+    fwd_frames: int
+    def __init__(self, gw_id: _Optional[str] = ..., lat: _Optional[float] = ..., lon: _Optional[float] = ..., rx_frame: _Optional[int] = ..., tx_frame: _Optional[int] = ..., processed_frame: _Optional[int] = ..., memory: _Optional[float] = ..., cpu: _Optional[float] = ..., bandwidth_reduction: _Optional[int] = ..., coverage: _Optional[float] = ..., fwd_frames: _Optional[int] = ...) -> None: ...
 
 class Gateway_info_list(_message.Message):
     __slots__ = ("gateway_list",)
@@ -114,7 +116,7 @@ class ReplyInfoDevList(_message.Message):
     def __init__(self, server_id: _Optional[int] = ..., response_data: _Optional[str] = ...) -> None: ...
 
 class ReplyStatistics(_message.Message):
-    __slots__ = ("server_id", "response_data", "ed_1_gw_selection", "ed_2_gw_selection", "ed_3_gw_selection", "start_key_agreement_process", "process_function", "process_window", "change_processing_configuraiton", "scenario", "assining_policy", "refreshing_table_rate")
+    __slots__ = ("server_id", "response_data", "ed_1_gw_selection", "ed_2_gw_selection", "ed_3_gw_selection", "start_key_agreement_process", "process_function", "process_window", "change_processing_configuraiton", "scenario", "assining_policy", "refreshing_table_rate", "refresh_rate")
     SERVER_ID_FIELD_NUMBER: _ClassVar[int]
     RESPONSE_DATA_FIELD_NUMBER: _ClassVar[int]
     ED_1_GW_SELECTION_FIELD_NUMBER: _ClassVar[int]
@@ -127,6 +129,7 @@ class ReplyStatistics(_message.Message):
     SCENARIO_FIELD_NUMBER: _ClassVar[int]
     ASSINING_POLICY_FIELD_NUMBER: _ClassVar[int]
     REFRESHING_TABLE_RATE_FIELD_NUMBER: _ClassVar[int]
+    REFRESH_RATE_FIELD_NUMBER: _ClassVar[int]
     server_id: int
     response_data: str
     ed_1_gw_selection: int
@@ -139,7 +142,8 @@ class ReplyStatistics(_message.Message):
     scenario: str
     assining_policy: str
     refreshing_table_rate: int
-    def __init__(self, server_id: _Optional[int] = ..., response_data: _Optional[str] = ..., ed_1_gw_selection: _Optional[int] = ..., ed_2_gw_selection: _Optional[int] = ..., ed_3_gw_selection: _Optional[int] = ..., start_key_agreement_process: _Optional[int] = ..., process_function: _Optional[str] = ..., process_window: _Optional[int] = ..., change_processing_configuraiton: _Optional[int] = ..., scenario: _Optional[str] = ..., assining_policy: _Optional[str] = ..., refreshing_table_rate: _Optional[int] = ...) -> None: ...
+    refresh_rate: int
+    def __init__(self, server_id: _Optional[int] = ..., response_data: _Optional[str] = ..., ed_1_gw_selection: _Optional[int] = ..., ed_2_gw_selection: _Optional[int] = ..., ed_3_gw_selection: _Optional[int] = ..., start_key_agreement_process: _Optional[int] = ..., process_function: _Optional[str] = ..., process_window: _Optional[int] = ..., change_processing_configuraiton: _Optional[int] = ..., scenario: _Optional[str] = ..., assining_policy: _Optional[str] = ..., refreshing_table_rate: _Optional[int] = ..., refresh_rate: _Optional[int] = ...) -> None: ...
 
 class SendLogMessage(_message.Message):
     __slots__ = ("client_id", "message_data", "key_agreement_log_message_node_id", "key_agreement_message_log", "key_agreement_process_time")
