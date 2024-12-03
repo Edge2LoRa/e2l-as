@@ -22,7 +22,7 @@ class Response(_message.Message):
     def __init__(self, server_id: _Optional[int] = ..., response_data: _Optional[str] = ...) -> None: ...
 
 class SendStatistics(_message.Message):
-    __slots__ = ("client_id", "message_data", "gw_1_received_frame_num", "gw_1_transmitted_frame_num", "gw_2_received_frame_num", "gw_2_transmitted_frame_num", "ns_received_frame_frame_num", "ns_transmitted_frame_frame_num", "module_received_frame_frame_num", "aggregation_function_result")
+    __slots__ = ("client_id", "message_data", "gw_1_received_frame_num", "gw_1_transmitted_frame_num", "gw_2_received_frame_num", "gw_2_transmitted_frame_num", "ns_received_frame_frame_num", "ns_transmitted_frame_frame_num", "module_received_frame_frame_num", "aggregation_function_result", "current_snapshot")
     CLIENT_ID_FIELD_NUMBER: _ClassVar[int]
     MESSAGE_DATA_FIELD_NUMBER: _ClassVar[int]
     GW_1_RECEIVED_FRAME_NUM_FIELD_NUMBER: _ClassVar[int]
@@ -33,6 +33,7 @@ class SendStatistics(_message.Message):
     NS_TRANSMITTED_FRAME_FRAME_NUM_FIELD_NUMBER: _ClassVar[int]
     MODULE_RECEIVED_FRAME_FRAME_NUM_FIELD_NUMBER: _ClassVar[int]
     AGGREGATION_FUNCTION_RESULT_FIELD_NUMBER: _ClassVar[int]
+    CURRENT_SNAPSHOT_FIELD_NUMBER: _ClassVar[int]
     client_id: int
     message_data: str
     gw_1_received_frame_num: int
@@ -43,7 +44,8 @@ class SendStatistics(_message.Message):
     ns_transmitted_frame_frame_num: int
     module_received_frame_frame_num: int
     aggregation_function_result: int
-    def __init__(self, client_id: _Optional[int] = ..., message_data: _Optional[str] = ..., gw_1_received_frame_num: _Optional[int] = ..., gw_1_transmitted_frame_num: _Optional[int] = ..., gw_2_received_frame_num: _Optional[int] = ..., gw_2_transmitted_frame_num: _Optional[int] = ..., ns_received_frame_frame_num: _Optional[int] = ..., ns_transmitted_frame_frame_num: _Optional[int] = ..., module_received_frame_frame_num: _Optional[int] = ..., aggregation_function_result: _Optional[int] = ...) -> None: ...
+    current_snapshot: int
+    def __init__(self, client_id: _Optional[int] = ..., message_data: _Optional[str] = ..., gw_1_received_frame_num: _Optional[int] = ..., gw_1_transmitted_frame_num: _Optional[int] = ..., gw_2_received_frame_num: _Optional[int] = ..., gw_2_transmitted_frame_num: _Optional[int] = ..., ns_received_frame_frame_num: _Optional[int] = ..., ns_transmitted_frame_frame_num: _Optional[int] = ..., module_received_frame_frame_num: _Optional[int] = ..., aggregation_function_result: _Optional[int] = ..., current_snapshot: _Optional[int] = ...) -> None: ...
 
 class Device_info(_message.Message):
     __slots__ = ("dev_id", "lat", "lon", "temperature", "humidity", "assigned_gw")
@@ -116,7 +118,7 @@ class ReplyInfoDevList(_message.Message):
     def __init__(self, server_id: _Optional[int] = ..., response_data: _Optional[str] = ...) -> None: ...
 
 class ReplyStatistics(_message.Message):
-    __slots__ = ("server_id", "response_data", "ed_1_gw_selection", "ed_2_gw_selection", "ed_3_gw_selection", "start_key_agreement_process", "process_function", "process_window", "change_processing_configuraiton", "scenario", "assining_policy", "refreshing_table_rate", "refresh_rate")
+    __slots__ = ("server_id", "response_data", "ed_1_gw_selection", "ed_2_gw_selection", "ed_3_gw_selection", "start_key_agreement_process", "process_function", "process_window", "change_processing_configuraiton", "scenario", "assining_policy", "refreshing_table_rate", "refresh_rate", "current_snapshot_hour")
     SERVER_ID_FIELD_NUMBER: _ClassVar[int]
     RESPONSE_DATA_FIELD_NUMBER: _ClassVar[int]
     ED_1_GW_SELECTION_FIELD_NUMBER: _ClassVar[int]
@@ -130,6 +132,7 @@ class ReplyStatistics(_message.Message):
     ASSINING_POLICY_FIELD_NUMBER: _ClassVar[int]
     REFRESHING_TABLE_RATE_FIELD_NUMBER: _ClassVar[int]
     REFRESH_RATE_FIELD_NUMBER: _ClassVar[int]
+    CURRENT_SNAPSHOT_HOUR_FIELD_NUMBER: _ClassVar[int]
     server_id: int
     response_data: str
     ed_1_gw_selection: int
@@ -143,7 +146,8 @@ class ReplyStatistics(_message.Message):
     assining_policy: str
     refreshing_table_rate: int
     refresh_rate: int
-    def __init__(self, server_id: _Optional[int] = ..., response_data: _Optional[str] = ..., ed_1_gw_selection: _Optional[int] = ..., ed_2_gw_selection: _Optional[int] = ..., ed_3_gw_selection: _Optional[int] = ..., start_key_agreement_process: _Optional[int] = ..., process_function: _Optional[str] = ..., process_window: _Optional[int] = ..., change_processing_configuraiton: _Optional[int] = ..., scenario: _Optional[str] = ..., assining_policy: _Optional[str] = ..., refreshing_table_rate: _Optional[int] = ..., refresh_rate: _Optional[int] = ...) -> None: ...
+    current_snapshot_hour: int
+    def __init__(self, server_id: _Optional[int] = ..., response_data: _Optional[str] = ..., ed_1_gw_selection: _Optional[int] = ..., ed_2_gw_selection: _Optional[int] = ..., ed_3_gw_selection: _Optional[int] = ..., start_key_agreement_process: _Optional[int] = ..., process_function: _Optional[str] = ..., process_window: _Optional[int] = ..., change_processing_configuraiton: _Optional[int] = ..., scenario: _Optional[str] = ..., assining_policy: _Optional[str] = ..., refreshing_table_rate: _Optional[int] = ..., refresh_rate: _Optional[int] = ..., current_snapshot_hour: _Optional[int] = ...) -> None: ...
 
 class SendLogMessage(_message.Message):
     __slots__ = ("client_id", "message_data", "key_agreement_log_message_node_id", "key_agreement_message_log", "key_agreement_process_time")

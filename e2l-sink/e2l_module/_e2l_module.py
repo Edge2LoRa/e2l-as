@@ -98,6 +98,7 @@ class E2LoRaModule:
         self.simulation_dataframe_list.sort()
 
         self.current_snapshot_position = 0
+        self.last_received_snapshot_position=0
         self.gateways_dataframe = pd.read_csv("gw-roma-50.csv")
         self.current_scenario = None
         self.balancer = balancer
@@ -424,6 +425,7 @@ class E2LoRaModule:
                 aggregation_function_result=self.statistics.get(
                     "aggregation_result", 0
                 ),
+                current_snapshot=self.current_snapshot_position,
             )
             yield request
             # time.sleep(5)
@@ -759,6 +761,7 @@ class E2LoRaModule:
             ed_1_gw_selection = response.ed_1_gw_selection
             ed_2_gw_selection = response.ed_2_gw_selection
             ed_3_gw_selection = response.ed_3_gw_selection
+    
 
             print("received sleep time equals to: ",response.refresh_rate)
             self.default_sleep_seconds=response.refresh_rate
@@ -774,9 +777,17 @@ class E2LoRaModule:
                     self.dataset_path = "/Volumes/SSD 250/backup tesi/processing/snapshot_taxi/"
                     self.balancer.dataset = "/Volumes/SSD 250/backup tesi/processing/snapshot_taxi/"
                 self.simulation_dataframe_list = os.listdir(self.dataset_path)
+                
                 self.simulation_dataframe_list.sort()
                 self.balancer.snapshot_file = self.simulation_dataframe_list[0]
             self.balancer.assigning_algorithm = response.assining_policy
+
+            
+            if self.last_received_snapshot_position != response.current_snapshot_hour:
+                dataset_len = len(self.simulation_dataframe_list)
+                self.current_snapshot_position = int((dataset_len * response.current_snapshot_hour)/100)
+                print(f"Current snapshot is updated in position: {self.current_snapshot_position}")
+                self.last_received_snapshot_position = response.current_snapshot_hour
 
             if(response.process_window != self.process_window):
                 self.process_window = response.process_window
