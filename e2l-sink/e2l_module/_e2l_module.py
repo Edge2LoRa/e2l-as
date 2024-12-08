@@ -100,10 +100,14 @@ class E2LoRaModule:
         self.current_snapshot_position = 0
         self.last_received_snapshot_position=0
         self.gateways_dataframe = pd.read_csv("gw-roma-50.csv")
-        self.current_scenario = None
+        self.current_scenario = "Moving cluster"
         self.balancer = balancer
 
         self.process_window = 10
+
+        self.process_function = 'Mean and Variance'
+        self.cpu_processing = 0.5
+        self.mb_processing = 5 
 
         self.legacy_not_duplicates = {}
         self.legacy_dropped = 0
@@ -402,6 +406,9 @@ class E2LoRaModule:
     """
 
     def _get_stats(self):
+        _current_snapshot = self.current_snapshot_position;
+        if self.current_scenario == 'Moving cluster':
+            _current_snapshot=_current_snapshot+66
         for i in range(1):
             gw_1_info = {}
             gw_2_info = {}
@@ -425,7 +432,7 @@ class E2LoRaModule:
                 aggregation_function_result=self.statistics.get(
                     "aggregation_result", 0
                 ),
-                current_snapshot=self.current_snapshot_position,
+                current_snapshot=_current_snapshot,
             )
             yield request
             # time.sleep(5)
@@ -500,16 +507,22 @@ class E2LoRaModule:
                 
             mb_reception = 2
             mb_transmission = 2
-            mb_processing = 5 
 
             cpu_reception = 0.05
             cpu_transmission = 0.05
-            cpu_processing = 0.5
+            
 
             for index,row in self.gateways_dataframe.iterrows():
                 received = received_frames_dict[int(row["GW_ID"])]
                 processed = processed_frame_dict[int(row["GW_ID"])]
                 forwarded = 0
+                _memory = int(((random.randint(236,276)+ received_frames_dict[int(row["GW_ID"])]*mb_reception + processed_frame_dict[int(row["GW_ID"])]*self.mb_processing + processed_frame_dict[int(row["GW_ID"])]*mb_transmission)/8192)*100)
+                _cpu =int(random.randint(7,12) + received_frames_dict[int(row["GW_ID"])]*cpu_reception + processed_frame_dict[int(row["GW_ID"])]*self.cpu_processing + processed_frame_dict[int(row["GW_ID"])]*cpu_transmission)
+                if _memory >= 100:
+                    _memory = 100
+                if _cpu >= 100:
+                    _cpu = 100
+
                 if (received - processed) > 0:
                     forwarded = received - processed
                 gateway = Gateway_info(
@@ -520,8 +533,8 @@ class E2LoRaModule:
                     tx_frame=int(processed_frame_dict[int(row["GW_ID"])]/self.process_window),
                     fwd_frames=forwarded,
                     processed_frame=processed_frame_dict[int(row["GW_ID"])],
-                    memory= int(((random.randint(236,276)+ received_frames_dict[int(row["GW_ID"])]*mb_reception + processed_frame_dict[int(row["GW_ID"])]*mb_processing + processed_frame_dict[int(row["GW_ID"])]*mb_transmission)/4096)*100),
-                    cpu=int(random.randint(7,12) + received_frames_dict[int(row["GW_ID"])]*cpu_reception + processed_frame_dict[int(row["GW_ID"])]*cpu_processing + processed_frame_dict[int(row["GW_ID"])]*cpu_transmission),
+                    memory=_memory,
+                    cpu=_cpu,
                     coverage=row['coverage']
                 )
                 gateway_list.gateway_list.append(gateway)
@@ -547,7 +560,6 @@ class E2LoRaModule:
         temp_dataframe = pd.read_csv(self.dataset_path + self.simulation_dataframe_list[self.current_snapshot_position])
         if self.current_scenario == "Taxi simulation":
             temp_dataframe = temp_dataframe[temp_dataframe['framecounter']==1]
-        print(self.balancer.assignment_table)
         if self.balancer.assignment_table == {}:
             
             for index, row in temp_dataframe.iterrows():
@@ -765,6 +777,16 @@ class E2LoRaModule:
 
             print("received sleep time equals to: ",response.refresh_rate)
             self.default_sleep_seconds=response.refresh_rate
+
+            if response.process_function != self.process_function:
+                self.process_function = response.process_function
+                if self.process_function == 'Mean and Variance':
+                    self.cpu_processing = 0.5
+                    self.mb_processing = 5
+                if self.process_function == 'Hampel Filter':
+                    self.cpu_procesing = 0.8
+                    self.mb_processing = 15
+
             
             if(response.scenario != self.current_scenario):
                 self.balancer.assignment_table = {}
