@@ -767,6 +767,7 @@ class E2LoRaModule:
         if log_type is not None:
             self._send_log(type=log_type, message=log_message)
 
+        gw_mqtt_payloads = {}
         # Check the preloaded devices
         for dev_index in range(len(self.e2ed_ids)):
             # Create Device info
@@ -802,18 +803,45 @@ class E2LoRaModule:
                 "edge_s_int_key": edge_s_int_key,
             }
             for gw_id in self.active_directory["e2gws"].keys():
-                log.debug(f"Sending {dev_eui} info to {gw_id}")
+                if gw_mqtt_payloads.get(gw_id) is None:
+                    log.debug(f"Creating payload for {gw_id}")
+                    gw_mqtt_payloads[gw_id] = {
+                        "assigned": [],
+                        "unassigned": [],
+                    }
                 if gw_id == assigned_gw:
-                    self.e2l_mqtt_client.publish_to_topic(
-                        topic=f"{gw_id}/{self.control_base_topic}/down/add_assigned_device",
-                        message=json.dumps(assigned_device_info),
-                    )
+                    gw_mqtt_payloads[gw_id]["assigned"].append(assigned_device_info)
                 else:
-                    self.e2l_mqtt_client.publish_to_topic(
-                        topic=f"{gw_id}/{self.control_base_topic}/down/add_unassigned_device",
-                        message=json.dumps(unassigned_device_info),
-                    )
+                    gw_mqtt_payloads[gw_id]["unassigned"].append(unassigned_device_info)
+                # log.debug(f"Sending {dev_eui} info to {gw_id}")
+                # if gw_id == assigned_gw:
+                #     self.e2l_mqtt_client.publish_to_topic(
+                #         topic=f"{gw_id}/{self.control_base_topic}/down/add_assigned_device",
+                #         message=json.dumps(assigned_device_info),
+                #     )
+                # else:
+                #     self.e2l_mqtt_client.publish_to_topic(
+                #         topic=f"{gw_id}/{self.control_base_topic}/down/add_unassigned_device",
+                #         message=json.dumps(unassigned_device_info),
+                #     )
+
             # time.sleep(0.1)
+
+        # SEND DEVICE INFO
+        for gw_id in gw_mqtt_payloads.keys():
+            assigned_devices = gw_mqtt_payloads[gw_id]["assigned"]
+            unassigned_devices = gw_mqtt_payloads[gw_id]["unassigned"]
+            log.debug(f"Sending devices info to {gw_id}")
+            log.debug(f"Assigned Devices len: {len(assigned_devices)}")
+            log.debug(f"Unassigned Devices len: {len(unassigned_devices)}")
+            self.e2l_mqtt_client.publish_to_topic(
+                topic=f"{gw_id}/{self.control_base_topic}/down/add_assigned_devices",
+                message=json.dumps(assigned_devices),
+            )
+            self.e2l_mqtt_client.publish_to_topic(
+                topic=f"{gw_id}/{self.control_base_topic}/down/add_unassigned_devices",
+                message=json.dumps(unassigned_devices),
+            )
         log.debug(f"Total Devices: {len(self.e2ed_ids)}")
 
         return 0
