@@ -739,10 +739,12 @@ class E2LoRaModule:
             "e2gw_stub": None,
         }
         # CREATE EGRESS BRIDGE
-        # TODO: MODIFY IP TO BE GENERIC AND NOT HARDCODED
+        fqdn = gw_id
+        if os.getenv("GW_SERVICE_NAME") is not None:
+            fqdn = f'{fqdn}.{os.getenv("GW_SERVICE_NAME")}'
         self.e2l_broker_api.create_egress_bridge(
             bridge_name=gw_id,
-            server=f"192.168.1.160:{gw_mqtt_endpoint_port}",
+            server=f"{fqdn}:{gw_mqtt_endpoint_port}",
             topic=f"{gw_id}/{self.control_base_topic}/down/#",
         )
 

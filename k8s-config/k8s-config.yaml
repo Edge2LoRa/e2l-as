@@ -4,6 +4,7 @@ metadata:
   name: e2as
   namespace: edge2lora
 spec:
+  serviceName: "e2as-headless-svc"
   selector:
     matchLabels:
       app: e2as
@@ -52,7 +53,7 @@ spec:
         - name: api-key
           mountPath: /opt/emqx/etc/default_api_key/
       - name: sink
-        image: ghcr.io/edge2lora/e2l-sink:k8s-2
+        image: ghcr.io/edge2lora/e2l-sink:k8s-3
         ports:
         - containerPort: 50051
           name: grpc
@@ -92,7 +93,7 @@ spec:
           value: "50051"
 
         - name: MONGO_HOST
-          value: "db-svc.edge2lora.cluster.local"
+          value: "db-svc.edge2lora.svc.cluster.local"
         - name: MONGO_PORT
           value: "27017"
         - name: MONGO_DB_NAME
@@ -140,6 +141,8 @@ spec:
           value: "edge2lora/control"
         - name: E2L_BROKER_API_PORT
           value: "18083"
+        - name: GW_SERVICE_NAME
+          value: "e2gw-headless-svc.edge2lora.svc.cluster.local"
         - name: E2L_BROKER_API_USERNAME
           valueFrom:
             secretKeyRef:
