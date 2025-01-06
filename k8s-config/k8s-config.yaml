@@ -52,10 +52,13 @@ spec:
         - name: api-key
           mountPath: /opt/emqx/etc/default_api_key/
       - name: sink
-        image: ghcr.io/edge2lora/e2l-sink:load-balancing-6
+        image: ghcr.io/edge2lora/e2l-sink:k8s-2
         ports:
         - containerPort: 50051
           name: grpc
+        volumeMounts:
+        - name: devices-volume
+          mountPath: /home/e2l/e2l-sink/device_files/
         env:
         - name: DEBUG
           value: "1"
@@ -63,16 +66,16 @@ spec:
           valueFrom:
             secretKeyRef:
               name: tts-broker-credentials
-              key: tts-broker-username
+              key: tts-broker-password
         - name: TTS_MQTT_USERNAME
           valueFrom:
             secretKeyRef:
               name: tts-broker-credentials
               key: tts-broker-username
         - name: TTS_MQTT_HOST
-          value: "TBD"
+          value: eu1.cloud.thethings.network
         - name: TTS_MQTT_PORT
-          value: 1883
+          value: "1883"
         - name: TTS_MQTT_BASE_TOPIC
           value: v3/edge2lora/devices/
         - name: TTS_MQTT_UPLINK_TOPIC
@@ -81,38 +84,38 @@ spec:
           value: v3/edge2lora/devices/+/join
 
         - name: DASHBOARD_RPC_HOST
-          value: 127.0.0.1
+          value: "127.0.0.1"
         - name: DASHBOARD_RPC_PORT
-          value: 23333
+          value: "23333"
 
         - name: RPC_SERVER_PORT
-          value: 50051
+          value: "50051"
 
         - name: MONGO_HOST
-          value: "TBD"
+          value: "db-svc.edge2lora.cluster.local"
         - name: MONGO_PORT
           value: "27017"
         - name: MONGO_DB_NAME
-          value: "TBD"
+          value: "experiments"
 
         - name: DEVICE_LIST_FILE
           value: device_files/devices.json
         
         - name: SPLIT_DEVICES
-          value: 0
+          value: "0"
         - name: GW_NUMBER
-          value: 1
+          value: "1"
         - name: ENABLE_MOBILITY
-          value: 1
+          value: "1"
 
         - name: GW_SHUT
-          value: 0 # 1 enabled, disabled otherwise
+          value: "0" # 1 enabled, disabled otherwise
         - name: DEVICE_NUMBER
-          value: 3
+          value: "3"
         - name: PACKET_NUMBER
-          value: 10
+          value: "10"
         - name: PACKET_DIVISOR
-          value: 4
+          value: "4"
 
 
         - name: E2L_MQTT_USERNAME
@@ -128,7 +131,7 @@ spec:
         - name: E2L_MQTT_HOST
           value: localhost
         - name: E2L_MQTT_PORT
-          value: "10883"
+          value: "1883"
         - name: E2L_MQTT_AGGR_INPUT_TOPIC
           value: process/input
         - name: E2L_MQTT_AGGR_OUTPUT_TOPIC
@@ -179,6 +182,19 @@ spec:
       #     value: "3.5"
       #   - name: CORE_NUMBER
       #     value: "*"
+  volumeClaimTemplates:
+  - metadata:
+      namespace: edge2lora
+      name: devices-volume
+    spec:
+      accessModes: ["ReadWriteOnce"]
+      storageClassName: "standard"
+      resources:
+        requests:
+          storage: 100Mi
+      selector:
+        matchLabels:
+          volume: devices-volume
 ---
 apiVersion: v1
 kind: Service
