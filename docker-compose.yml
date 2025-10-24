@@ -53,6 +53,6 @@ services:
   #    - e2l_network
 networks:
   e2l_network:
-    # name: e2l_network
+    name: e2l_network
     # driver: overlay
     driver: bridge
