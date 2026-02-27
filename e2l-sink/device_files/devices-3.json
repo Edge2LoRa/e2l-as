@@ -1,6 +1,57 @@
 [
   {
     "ids": {
+      "device_id": "121-13",
+      "dev_eui": "0000000000000001",
+      "join_eui": "0102030405060708"
+    },
+    "name": "My Sensor1",
+    "description": "Living room temperature sensor",
+    "lorawan_version": "MAC_V1_0_2",
+    "lorawan_phy_version": "PHY_V1_0_2_REV_B",
+    "frequency_plan_id": "EU_863_870_TTN",
+    "supports_join": true,
+    "root_keys": {
+      "app_key": {
+        "key": "D43B5DDDD0F56242649510875E33B0B0"
+      }
+    },
+    "session": {
+      "dev_addr": "015E0904",
+      "keys": {
+        "f_nwk_s_int_key": { "key": "7B46F8A42355DB86B1E96887C26434EE" },
+        "app_s_key": { "key": "61162A31EFCE1D82356ED09FC3E5B720" }
+      }
+    }
+  },
+  {
+    "ids": {
+      "device_id": "224-13",
+      "dev_eui": "0000000000000004",
+      "join_eui": "0102030405060708"
+    },
+    "name": "My Sensor2",
+    "description": "Living room temperature sensor",
+    "lorawan_version": "MAC_V1_0_2",
+    "lorawan_phy_version": "PHY_V1_0_2_REV_B",
+    "frequency_plan_id": "EU_863_870_TTN",
+    "supports_join": true,
+    "root_keys": {
+      "app_key": {
+        "key": "D43B5DDDD0F56242649510875E33B0B0"
+      }
+    },
+    "session": {
+      "dev_addr": "00CCBB95",
+      "keys": {
+        "f_nwk_s_int_key": { "key": "2916477C696AE0EC160C517894879332" },
+        "app_s_key": { "key": "EE581C9C6D859430CCD3C4BF6096DE1B" }
+      }
+    }
+    
+  },
+  {
+    "ids": {
       "device_id": "e2ed1",
       "dev_eui": "1102030405060701",
       "join_eui": "1102030405060701"

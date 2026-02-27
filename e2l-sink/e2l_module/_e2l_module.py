@@ -4,20 +4,30 @@ import time
 from Crypto.PublicKey import ECC
 import logging
 import psutil
-import grpc
-from e2gw_rpc_client import (
-    edge2gateway_pb2_grpc,
-    EdPubInfo,
-    E2LDeviceInfo,
-    E2LDevicesInfoComplete,
-    Device,
-    ActiveFlag,
-)
+import threading
+
+
+
+# import grpc
+
+# from e2gw_rpc_client import (
+#     edge2gateway_pb2_grpc,
+#     EdPubInfo,
+#     E2LDeviceInfo,
+#     E2LDevicesInfoComplete,
+#     Device,
+#     ActiveFlag,
+# )
+# from .__private__ import (
+#     demo_pb2_grpc,
+#     SendStatistics,
+#     SendLogMessage,
+#     SendJoinUpdateMessage,
+#     E2LBrokerApi,
+# )
 from .__private__ import (
-    demo_pb2_grpc,
     SendStatistics,
     SendLogMessage,
-    SendJoinUpdateMessage,
     E2LBrokerApi,
 )
 from mqtt_module import MQTTModule
@@ -64,8 +74,11 @@ class E2LoRaModule:
     """
     This class is handle the Edge2LoRa Protocol.
     """
-
-    def __init__(self, dashboard_rpc_endpoint, experiment_id):
+    #  def __init__(self, dashboard_rpc_endpoint, experiment_id):
+    def __init__(self):
+        # E2L Broker API
+        self.last_edge_join_response = None
+        self.edge_join_event = threading.Event()
         # Generate ephimeral ecc private/public key pair
         self.ephimeral_private_key = ECC.generate(curve="P-256")
         self.ephimeral_public_key = self.ephimeral_private_key.public_key()
@@ -96,31 +109,31 @@ class E2LoRaModule:
         self.db = None
         self.collection = None
         self.dashboard_rpc_stub = None
-        if experiment_id is not None:
-            self.experiment_id = experiment_id
-            mongo_host = os.getenv("MONGO_HOST", "localhost")
-            mongo_port = os.getenv("MONGO_PORT", 27017)
-            if isinstance(mongo_port, str) and mongo_port.isnumeric():
-                mongo_port = int(mongo_port)
-            self.db_client = MongoClient(mongo_host, mongo_port)
-            db_name = os.getenv("MONGO_DB_NAME", "experiments_db")
-            self.db = self.db_client[db_name]
-            if experiment_id not in self.db.list_collection_names():
-                self.db.create_collection(experiment_id)
-                self.collection = self.db[experiment_id]
-            else:
-                # raise exception
-                raise Exception(
-                    "Experiment ID already exists, please change the experiment ID."
-                )
-        else:
-            try:
-                channel = grpc.insecure_channel(dashboard_rpc_endpoint)
-                grpc.channel_ready_future(channel).result(timeout=DASHBOARD_TIMEOUT_SEC)
-                self.dashboard_rpc_stub = demo_pb2_grpc.GRPCDemoStub(channel)
-            except:
-                log.info("DASHBOARD RPC ENDPOINT NOT AVAILABLE.")
-                self.dashboard_rpc_stub = None
+        # if experiment_id is not None:
+        #     self.experiment_id = experiment_id
+        #     mongo_host = os.getenv("MONGO_HOST", "localhost")
+        #     mongo_port = os.getenv("MONGO_PORT", 27017)
+        #     if isinstance(mongo_port, str) and mongo_port.isnumeric():
+        #         mongo_port = int(mongo_port)
+        #     self.db_client = MongoClient(mongo_host, mongo_port)
+        #     db_name = os.getenv("MONGO_DB_NAME", "experiments_db")
+        #     self.db = self.db_client[db_name]
+        #     if experiment_id not in self.db.list_collection_names():
+        #         self.db.create_collection(experiment_id)
+        #         self.collection = self.db[experiment_id]
+        #     else:
+        #         # raise exception
+        #         raise Exception(
+        #             "Experiment ID already exists, please change the experiment ID."
+        #         )
+        # else:
+        #     try:
+        #         channel = grpc.insecure_channel(dashboard_rpc_endpoint)
+        #         grpc.channel_ready_future(channel).result(timeout=DASHBOARD_TIMEOUT_SEC)
+        #         self.dashboard_rpc_stub = demo_pb2_grpc.GRPCDemoStub(channel)
+        #     except:
+        #         log.info("DASHBOARD RPC ENDPOINT NOT AVAILABLE.")
+        #         self.dashboard_rpc_stub = None
         #############################
         #   INIT TTS MQTT CLIENT    #
         #############################
@@ -131,6 +144,7 @@ class E2LoRaModule:
             host=os.getenv("TTS_MQTT_HOST"),
             port=int(os.getenv("TTS_MQTT_PORT")),
         )
+        self.tts_base_topic = os.getenv("TTS_MQTT_BASE_TOPIC")
         log.debug("Connected to TTS MQTT broker")
         #############################
         #   INIT E2L MQTT CLIENT    #
@@ -899,6 +913,7 @@ class E2LoRaModule:
             # Assign E2GW to E2ED and store informations
             selected_e2gw = 1
             if dev_eui in self.e2ed_ids:
+                log.debug(f"Dev EUI {dev_eui} already in e2ed_ids list")
                 ed_index = self.e2ed_ids.index(dev_eui)
                 if ed_index == 0:
                     selected_e2gw = self.ed_1_gw_selection
@@ -908,7 +923,9 @@ class E2LoRaModule:
                     selected_e2gw = self.ed_3_gw_selection
                 else:
                     pass
+                log.debug(f"Dev EUI {dev_eui} assigned to E2GW index {selected_e2gw} based on e2ed_ids list")
             else:
+                log.debug(f"Dev EUI {dev_eui} not in e2ed_ids list, assigning based on index")
                 ed_next_index = len(self.e2ed_ids)
                 if ed_next_index == 0:
                     selected_e2gw = self.ed_1_gw_selection
@@ -918,14 +935,12 @@ class E2LoRaModule:
                     selected_e2gw = self.ed_3_gw_selection
                 else:
                     pass
-
+            log.debug(f"E2GW_IDS: {self.e2gw_ids}")
             if len(self.e2gw_ids) > 0:
-                if len(self.e2gw_ids) < selected_e2gw:
+                if selected_e2gw is None or len(self.e2gw_ids) < selected_e2gw:
                     e2gw = self.active_directory["e2gws"].get(self.e2gw_ids[0])
                 else:
-                    e2gw = self.active_directory["e2gws"].get(
-                        self.e2gw_ids[selected_e2gw - 1]
-                    )
+                    e2gw = self.active_directory["e2gws"].get(self.e2gw_ids[selected_e2gw - 1])
             if e2gw is None:
                 log.error("No E2GW found")
                 return -1
@@ -952,34 +967,36 @@ class E2LoRaModule:
         # encode g_as_gw in base64
         g_as_gw_exported = g_as_gw.export_key(format="SEC1")
         g_as_gw_base_64 = base64.b64encode(g_as_gw_exported).decode("utf-8")
-        _downlink_frame = self._send_downlink_frame(
-            base64_message=g_as_gw_base_64, dev_id=dev_id
-        )
+        # _downlink_frame = self._send_downlink_frame(
+        #     base64_message=g_as_gw_base_64, dev_id=dev_id
+        # )
         # SEND LOG
         # if len(self.e2ed_ids) < 1 or  (dev_eui in self.e2ed_ids and self.e2ed_ids.index(dev_eui) == 0):
-        self._send_log(
-            type=LOG_ED, message=f"Received EdgeAcceptRequest (Dev: {dev_addr})"
-        )
+        # self._send_log(
+        #     type=LOG_ED, message=f"Received EdgeAcceptRequest (Dev: {dev_addr})"
+        # )
 
         # Generate g_as_ed
         # Decode base64
         dev_pub_key_compressed = base64.b64decode(dev_pub_key_compressed_base_64)
-        dev_pub_key = ECC.import_key(dev_pub_key_compressed, curve_name="P-256")
+        dev_pub_key = ECC.import_key(dev_pub_key_compressed,curve_name="P-256")
+        print(dev_pub_key.export_key(format="PEM"))
         g_as_ed = dev_pub_key.pointQ * self.ephimeral_private_key.d
         g_as_ed_bytes = ECC.construct(
             curve="P-256", point_x=g_as_ed.x, point_y=g_as_ed.y
         ).export_key(format="SEC1")
 
-        ### Send g_as_ed to e2gw
-        e2gw_rpc_stub = e2gw.get("e2gw_stub")
-        ed_pub_info = EdPubInfo(
-            dev_eui=dev_eui,
-            dev_addr=dev_addr,
-            g_as_ed=g_as_ed_bytes,
-            dev_public_key=dev_pub_key_compressed,
+        self.e2l_mqtt_client.publish_to_topic(
+            topic=f"{e2gw.get('gw_id')}/{self.control_base_topic}/down/edge_join_info",
+            message=json.dumps({
+                "dev_eui":dev_eui,
+                "dev_addr":dev_addr,
+                "g_as_ed":g_as_ed_bytes.hex(),
+                "dev_public_key":dev_pub_key_compressed_base_64
+            }),
         )
-        response = e2gw_rpc_stub.handle_ed_pub_info(ed_pub_info)
-        g_gw_ed_bytes = response.g_gw_ed
+        # g_gw_ed_bytes = e2gw.get('gw_id').encode("utf-8")  # For test, use GW ID as g_gw_ed
+        g_gw_ed_bytes = self.wait_for_edge_join_response()
         g_gw_ed = ECC.import_key(g_gw_ed_bytes, curve_name="P-256")
         edgeSKey_int = self.ephimeral_private_key.d * g_gw_ed.pointQ
         edgeSKey = edgeSKey_int.x.to_bytes()
@@ -1010,33 +1027,35 @@ class E2LoRaModule:
         dev_obj["edgeSEncKey"] = edgeSEncKey
         self.active_directory["e2eds"][dev_eui] = dev_obj
         if dev_eui not in self.e2ed_ids:
+            print(f"Appending {dev_eui} to e2ed_ids list")
             self.e2ed_ids.append(dev_eui)
+        else:
+            print(f"{dev_eui} already in e2ed_ids list")
 
-        # SEND LOG
-        # if self.e2ed_ids.index(dev_eui) == 0:
-        self._send_log(
-            type=LOG_ED,
-            message=f'Edge Join Completed (Dev: {dev_addr}, GW: {self.e2gw_ids.index(e2gw.get("gw_id"))+1})',
-        )
-        if log_type is not None:
-            self._send_log(
-                type=log_type, message=f"Edge Join Completed (Dev: {dev_addr})"
-            )
+        log.info(f"Edge Join Completed for device {dev_addr} with E2GW {e2gw.get('gw_id')}")
+        # Schedule downlink to ed with edge join accept and g_as_gw
+        payload = {
+            "downlinks": [{
+                "f_port": 4,
+                "frm_payload": g_as_gw_base_64,
+                "priority": "NORMAL"
+            }]
+        }
 
-        # UPDATE DASHBOARD NETWORK TOPOLOGY
-        if self.dashboard_rpc_stub is not None:
-            join_update_message = SendJoinUpdateMessage(
-                client_id=1,
-                message_data="",
-                ed_id=self.e2ed_ids.index(dev_eui) + 1,
-                gw_id=self.e2gw_ids.index(e2gw.get("gw_id")) + 1,
-            )
-            ret = self.dashboard_rpc_stub.SimpleMethodsJoinUpdateMessage(
-                join_update_message
-            )
+        self.tts_mqtt_client.publish_to_topic(topic=f"{self.tts_base_topic}/{dev_id}/down/replace", message=json.dumps(payload))
+        log.debug(f"Sent Edge Join Accept to {dev_addr} via TTS MQTT topic {self.tts_base_topic}/{dev_id}/down/replace with payload: {payload}")
+
 
         return 0
 
+    def wait_for_edge_join_response(self, timeout=10):
+        received = self.edge_join_event.wait(timeout)
+
+        if not received:
+            raise TimeoutError("Did not receive edge_join_response")
+
+        self.edge_join_event.clear()
+        return self.last_edge_join_response
     """
         @brief  This function handle new edge frame received by an ED, passing by the legacy route.
         @param dev_id: The Dev ID as in TTS.
@@ -1464,6 +1483,7 @@ class E2LoRaModule:
         dev_eui = end_devices_infos.get("dev_eui")
         dev_addr = end_devices_infos.get("dev_addr")
         if "/join" in topic:
+            log.debug("Received OTAA Join Request")
             ret = self.handle_otaa_join_request(
                 dev_id=dev_id, dev_eui=dev_eui, dev_addr=dev_addr
             )
@@ -1482,7 +1502,6 @@ class E2LoRaModule:
                 dev_id, dev_eui, dev_addr, fcnt, rx_timestamp, frame_payload, payload
             )
         elif up_port == DEFAULT_E2L_JOIN_PORT:
-            log.debug("Received Edge Join Frame")
             ret = self.handle_edge_join_request(
                 dev_id=dev_id,
                 dev_eui=dev_eui,
@@ -1588,19 +1607,29 @@ class E2LoRaModule:
         log.debug(f"GW ID: {gw_id}")
         command = topic.split("/")[-1]
         log.debug(f"Command: {command}")
+        log.debug(f"Message: {message.payload}")
         payload_str = message.payload.decode("utf-8")
-        payload = json.loads(payload_str)
-        log.debug(f"Received control message: {payload}")
+        try:
+            payload = json.loads(payload_str)
+        except json.JSONDecodeError as e:
+            log.error(f"Invalid JSON payload: {payload_str}")
+            return
+     
         if command == "pub_info":
             gw_pub_key = bytes(payload.get("pub_key"))
             log.debug(f"Received public key: {gw_pub_key}")
-            gw_rpc_port = payload.get("rpc_port")
+            # gw_rpc_port = payload.get("rpc_port")
             gw_mqtt_port = payload.get("mqtt_port")
             self.handle_gw_pub_info(
                 gw_id=gw_id,
                 gw_mqtt_endpoint_port=gw_mqtt_port,
                 gw_pub_key_compressed=gw_pub_key,
             )
+        elif command == "edge_join_response":
+            log.debug(f"Received edge join response: {payload}")
+            self.last_edge_join_response = bytes(payload)
+            self.edge_join_event.set()
+         
         else:
             log.warning(f"Unknown command: {command}")
 
